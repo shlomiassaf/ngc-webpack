@@ -53,6 +53,7 @@ The problem with this approach is the resources, `compiler-cli` runs before webp
 
 `ngc-webpack` solves this by running each of the resources through webpack using the webpack configuration file supplied.
 
+> `ngc-webpack` does not care about SCSS, LESS or any intermediate resource that requires transformation. Each resource will follow the chain defined in the webpack configuration supplied. You get identical result in but development and prod (with AOT) builds.
 
 ## Usage
 To install `npm install -g ngc-webpack`
