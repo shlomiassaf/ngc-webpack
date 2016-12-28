@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import * as Path from 'path';
 import { main as tscWrappedMain, NgcCliOptions, UserError } from '@angular/tsc-wrapped';
 import { SyntaxError } from '@angular/compiler' ;
