@@ -1,19 +1,22 @@
 {
   "name": "ngc-webpack",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "main": "src/main.js",
   "typings": "src/main.d.ts",
   "bin": {
     "ngc-w": "./src/main.js"
   },
+  "dependencies": {
+    "reflect-metadata": "^0.1.2",
+    "@angular/tsc-wrapped": "0.5.0",
+    "minimist": "^1.2.0"
+  },
   "devDependencies": {
     "@types/node": "^6.0.54",
     "@types/webpack": "^2.0.0",
-    "minimist": "^1.2.0",
     "@angular/compiler": "^2.0.0",
     "@angular/compiler-cli": "^2.0.0",
-    "@angular/tsc-wrapped": "0.5.0",
     "typescript": "^2.0.0",
     "webpack": "2.2.0-rc.3"
   }
