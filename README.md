@@ -66,6 +66,39 @@ ngc-w --webpack webpack.aot.json
 `ngc-webpack` wraps `compiler-cli` so all cli parameters sent to `ngc` are valid here (e.g: -p for ts configuration file).  
 The only additional parameter is the `--webpack` parameter used to point to the webpack configuration factory.
 
+### Plugin
+`ngc-webpack` comes with an optional plugin called `NgcWebpackPlugin`  
+The plugin allows hooking into the resource compilation process.
+
+Currently, the only feature is path transformation, i.e: given a path to a resource, return a different path.
+The `pathTransformer` hooks is a callback that get's a path (string) and return a path (different to same).  
+If the returned path is an empty string ('') the content of the resource is ignored and will resolve to an empty string.
+
+Example (webpack.config module)
+```js
+const NgcWebpack = require('ngc-webpack');
+
+module.exports = function () {
+  return {
+    /* All webpack configuration stuff... */
+    plugins: [
+      /* Webpack plugins here... */
+      new NgcWebpack.NgcWebpackPlugin({
+        pathTransformer: function(resourcePath) {
+          /*
+              If we compile a material button, remove it style.
+           */
+          const MAT_BUTTON_RE = /(^.*\/node_modules\/@angular\/material\/button\/button\.css$)/;
+          if (MAT_BUTTON_RE.test(resourcePath)) {
+            return '';
+          }
+          return resourcePath;
+        }
+      })
+    ]
+  }
+}
+```
 
 ## Why
 In the future I hope we all converge into 1 solution, `@ngtools/webpack`, if you have no issues with it, you don't need `ngc-wrapper`.

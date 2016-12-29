@@ -1,9 +1,9 @@
 {
   "name": "ngc-webpack",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "MIT",
-  "main": "src/main.js",
-  "typings": "src/main.d.ts",
+  "main": "index.js",
+  "typings": "index.d.ts",
   "bin": {
     "ngc-w": "./src/main.js"
   },

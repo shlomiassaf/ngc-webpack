@@ -7,12 +7,13 @@
     "sourceMap": true,
     "inlineSources": true,
     "declaration": true,
-    "outDir": "dist/src",
+    "outDir": "dist",
     "noEmitOnError": true,
     "moduleResolution": "node",
     "skipLibCheck": true
   },
   "include": [
+    "index.ts",
     "src/**/*"
   ],
   "exclude": [
