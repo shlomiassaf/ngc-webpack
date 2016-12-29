@@ -75,9 +75,9 @@ The `pathTransformer` hooks is a callback that get's a path (string) and return 
 If the returned path is an empty string ('') the content of the resource is ignored and will resolve to an empty string.
 
 In addition there are 2 callbacks invoked when the process ends:  
-  - onCompilationSuccess: () => void  
+  - **onCompilationSuccess: () => void**  
   Fires then the compilation ended with no errors.
-  - onCompilationError?: (error: Error) => void
+  - **onCompilationError?: (error: Error) => void**  
   Fires then the compilation ended with an error.
   
 If you throw from these callbacks the process will exit with failure and print the error message.
