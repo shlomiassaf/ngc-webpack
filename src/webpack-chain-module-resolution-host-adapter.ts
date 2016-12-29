@@ -1,23 +1,19 @@
-import * as webpack from 'webpack';
 import { ModuleResolutionHost } from 'typescript';
 import { ModuleResolutionHostAdapter } from '@angular/compiler-cli' ;
 
 import { WebpackResourceLoader } from './webpack-resource-loader';
-import { NgcWebpackPlugin, PathTransformer } from './plugin';
+import { PathTransformer } from './plugin';
+import { WebpackWrapper } from './webpack-wrapper';
 
 export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHostAdapter {
-  public compiler: any;
   private _loader: WebpackResourceLoader;
   private _pathTransformer: PathTransformer;
 
-  constructor(host: ModuleResolutionHost, webpackConfig: any) {
+  constructor(host: ModuleResolutionHost, public webpackWrapper: WebpackWrapper) {
     super(host);
-    this.compiler = webpack(webpackConfig());
-    this._loader = new WebpackResourceLoader(this.compiler.createCompilation());
+    this._loader = new WebpackResourceLoader(this.webpackWrapper.compiler.createCompilation());
 
-    const plugin: NgcWebpackPlugin = this.compiler.options.plugins
-      .filter( p => p instanceof NgcWebpackPlugin)[0];
-
+    const plugin = this.webpackWrapper.plugin;
     if (plugin && typeof plugin.options.pathTransformer === 'function') {
       this._pathTransformer = plugin.options.pathTransformer;
     }

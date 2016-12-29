@@ -5,21 +5,13 @@ import { main as tscWrappedMain, NgcCliOptions, UserError } from '@angular/tsc-w
 import { SyntaxError } from '@angular/compiler' ;
 import { CodeGenerator, CompilerHostContext } from '@angular/compiler-cli' ;
 
+import { WebpackWrapper } from './webpack-wrapper';
 import { WebpackChainModuleResolutionHostAdapter } from './webpack-chain-module-resolution-host-adapter';
 
-function codeGenFactory(args: any, consoleError: (s: string) => void) {
-  const webpackConfigPath = Path.join(process.cwd(), args.webpack || './webpack.config.js');
-  let config: any;
 
-  try {
-    config = require(webpackConfigPath);
-  } catch (err) {
-    consoleError(`Invalid webpack configuration. Please set a valid --webpack argument.\n${err.message}`);
-    throw err;
-  }
-
+function codeGenFactory(webpackWrapper: WebpackWrapper) {
   return (ngOptions, cliOptions, program, host) => {
-    const hostContext: CompilerHostContext = new WebpackChainModuleResolutionHostAdapter(host, config);
+    const hostContext: CompilerHostContext = new WebpackChainModuleResolutionHostAdapter(host, webpackWrapper);
     return CodeGenerator.create(ngOptions, cliOptions, program, host, hostContext).codegen();
   }
 }
@@ -28,9 +20,15 @@ export function main(args: any, consoleError: (s: string) => void = console.erro
   const project = args.p || args.project || '.';
   const cliOptions = new NgcCliOptions(args);
 
-  return tscWrappedMain(project, cliOptions, codeGenFactory(args, consoleError))
+  const webpack = new WebpackWrapper(Path.join(process.cwd(), args.webpack || './webpack.config.js'));
+
+  return Promise.resolve()
+    .then( () => webpack.init() )
+    .then( () => tscWrappedMain(project, cliOptions, codeGenFactory(webpack)) )
+    .then( () => webpack.emitOnCompilationSuccess() )
     .then(() => 0)
     .catch(e => {
+      webpack.emitOnCompilationError(e);
       if (e instanceof UserError || e instanceof SyntaxError) {
         consoleError(e.message);
         return Promise.resolve(1);

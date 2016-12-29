@@ -74,6 +74,18 @@ Currently, the only feature is path transformation, i.e: given a path to a resou
 The `pathTransformer` hooks is a callback that get's a path (string) and return a path (different to same).  
 If the returned path is an empty string ('') the content of the resource is ignored and will resolve to an empty string.
 
+In addition there are 2 callbacks invoked when the process ends:  
+  - onCompilationSuccess: () => void  
+  Fires then the compilation ended with no errors.
+  - onCompilationError?: (error: Error) => void
+  Fires then the compilation ended with an error.
+  
+If you throw from these callbacks the process will exit with failure and print the error message.
+This allows some validation for `pathTransformer`, to check the state one finished and conclude about the result.
+
+> Throwing from `onCompilationError` is like re-throw with a new error.  
+Currently it's not possible to suppress an error.
+
 Example (webpack.config module)
 ```js
 const NgcWebpack = require('ngc-webpack');
