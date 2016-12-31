@@ -28,6 +28,10 @@ export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHos
       }
     }
 
+    if (!this.fileExists(path)) {
+      throw new Error(`Compilation failed. Resource file not found: ${path}`);
+    }
+
     return this._loader.get(path);
   }
 }
