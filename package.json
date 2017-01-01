@@ -1,9 +1,22 @@
 {
   "name": "ngc-webpack",
   "version": "1.0.5",
+  "description": "A wrapper for the angular compiler-cli with webpack integration",
+  "author": "Shlomi Assaf <shlomiasaf@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shlomiassaf/ngc-webpack.git"
+  },
   "main": "index.js",
   "typings": "index.d.ts",
+  "keywords": [
+    "angular",
+    "compiler",
+    "webpack",
+    "laoder",
+    "plugin"
+  ],
   "bin": {
     "ngc-w": "./src/main.js"
   },
@@ -19,5 +32,9 @@
     "@angular/compiler-cli": "^2.0.0",
     "typescript": "^2.0.0",
     "webpack": "2.2.0-rc.3"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/shlomiassaf/ngc-webpack/issues"
+  },
+  "homepage": "https://github.com/shlomiassaf/ngc-webpack#readme"
 }
