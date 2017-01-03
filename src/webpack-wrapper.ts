@@ -8,6 +8,8 @@ export class WebpackWrapper {
   public config: any;
   public plugin: NgcWebpackPlugin;
 
+  private hasPlugin: boolean;
+
   constructor(private webpackConfigPath: string) { }
 
   init(): void {
@@ -22,16 +24,18 @@ export class WebpackWrapper {
 
     this.plugin = this.compiler.options.plugins
       .filter( p => p instanceof NgcWebpackPlugin)[0];
+
+    this.hasPlugin = !!this.plugin;
   }
 
   emitOnCompilationSuccess(): void {
-    if (typeof this.plugin.options.onCompilationSuccess === 'function') {
+    if (this.hasPlugin && typeof this.plugin.options.onCompilationSuccess === 'function') {
       this.plugin.options.onCompilationSuccess.call(this);
     }
   }
 
   emitOnCompilationError(err: Error): void {
-    if (typeof this.plugin.options.onCompilationError === 'function') {
+    if (this.hasPlugin && typeof this.plugin.options.onCompilationError === 'function') {
       this.plugin.options.onCompilationError.call(this, err);
     }
   }
