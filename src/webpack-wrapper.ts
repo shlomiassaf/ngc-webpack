@@ -3,6 +3,24 @@ import { UserError } from '@angular/tsc-wrapped';
 
 import { NgcWebpackPlugin } from './plugin';
 
+/**
+ * Resolve the config to an object.
+ * If it's a fn, invoke.
+ *
+ * Also check if it's a mocked ES6 Module in cases where TS file is used that uses "export default"
+ * @param config
+ * @returns {any}
+ */
+function resolveConfig(config: any): any {
+  if (typeof config === 'function') {
+    return config();
+  } else if (config.__esModule === true && !!config.default) {
+    return resolveConfig(config.default);
+  } else {
+    return config;
+  }
+}
+
 export class WebpackWrapper {
   public compiler: any;
   public config: any;
@@ -15,7 +33,7 @@ export class WebpackWrapper {
   init(): void {
     try {
       const config = require(this.webpackConfigPath);
-      this.config = typeof config === 'function' ? config() : config;
+      this.config = resolveConfig(config);
     } catch (err) {
       throw new UserError(`Invalid webpack configuration. Please set a valid --webpack argument.\n${err.message}`);
     }

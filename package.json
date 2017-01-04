@@ -1,6 +1,6 @@
 {
   "name": "ngc-webpack",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "A wrapper for the angular compiler-cli with webpack integration",
   "author": "Shlomi Assaf <shlomiasaf@gmail.com>",
   "license": "MIT",
