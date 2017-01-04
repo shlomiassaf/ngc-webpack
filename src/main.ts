@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+require('ts-node/register');
+
 import * as Path from 'path';
 import 'reflect-metadata';
 import { main as tscWrappedMain, NgcCliOptions, UserError } from '@angular/tsc-wrapped';
