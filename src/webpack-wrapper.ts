@@ -28,11 +28,11 @@ export class WebpackWrapper {
 
   private hasPlugin: boolean;
 
-  constructor(private webpackConfigPath: string) { }
+  constructor(private webpackConfig: string | any) { }
 
   init(): void {
     try {
-      const config = require(this.webpackConfigPath);
+      const config = typeof this.webpackConfig === 'string' ? require(this.webpackConfig) : this.webpackConfig;
       this.config = resolveConfig(config);
     } catch (err) {
       throw new UserError(`Invalid webpack configuration. Please set a valid --webpack argument.\n${err.message}`);
