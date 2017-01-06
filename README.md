@@ -2,6 +2,13 @@
 
 **compiler-cli** with webpack's loader chain.
 
+> Note: Version 1.1.0 allows using the plugin to manage angular compilation without the
+need to run the compilation command from the command line before webpack is executed.
+It also allows removing `@Component` templates (template/styles) from the bundle since they 
+become not used duplicates after AOT compilation.  
+This will be documented soon, meanwhile see the `AngularClass/angular2-webpack-starter` repo for an example.
+
+
 A wrapper around the [compiler-cli](https://github.com/angular/angular/tree/master/modules/%40angular/compiler-cli)
 that pass `@Component` resources (*templateUrl, styleUrls*) through webpack's build loader chain.  
 

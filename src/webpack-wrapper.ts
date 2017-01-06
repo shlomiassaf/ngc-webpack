@@ -4,6 +4,7 @@ import { UserError } from '@angular/tsc-wrapped';
 
 import { NgcWebpackPlugin } from './plugin';
 
+
 /**
  * Resolve the config to an object.
  * If it's a fn, invoke.
@@ -22,46 +23,20 @@ function resolveConfig(config: any): any {
   }
 }
 
+
 export class WebpackWrapper {
-  public compiler: any;
-  public config: any;
   public plugin: NgcWebpackPlugin;
+  public aotResources: any = {}; //TODO: use Map if in node 5
 
   private hasPlugin: boolean;
 
-  constructor(private webpackConfig: string | any) { }
 
-  init(): void {
-    try {
-      let config: any;
-
-      if (!this.webpackConfig) {
-        this.webpackConfig = './webpack.config.js';
-      }
-
-      if (typeof this.webpackConfig === 'string') {
-        let configPath = Path.isAbsolute(this.webpackConfig)
-            ? this.webpackConfig
-            : Path.join(process.cwd(), this.webpackConfig)
-          ;
-
-        config = require(configPath);
-      } else {
-        config = this.webpackConfig;
-      }
-
-      this.config = resolveConfig(config);
-    } catch (err) {
-      throw new UserError(`Invalid webpack configuration. Please set a valid --webpack argument.\n${err.message}`);
-    }
-
-    this.compiler = webpack(this.config);
-
+  private constructor(public compiler: any) {
     this.plugin = this.compiler.options.plugins
       .filter( p => p instanceof NgcWebpackPlugin)[0];
 
     this.hasPlugin = !!this.plugin;
-  }
+  };
 
   emitOnCompilationSuccess(): void {
     if (this.hasPlugin && typeof this.plugin.options.onCompilationSuccess === 'function') {
@@ -73,5 +48,45 @@ export class WebpackWrapper {
     if (this.hasPlugin && typeof this.plugin.options.onCompilationError === 'function') {
       this.plugin.options.onCompilationError.call(this, err);
     }
+  }
+
+  pathTransformer(path: string): string {
+    this.aotResources[path] = true;
+
+    if (this.plugin && typeof this.plugin.options.pathTransformer === 'function') {
+      return this.plugin.options.pathTransformer(path);
+    } else {
+      return path;
+    }
+  }
+
+  static fromConfig(webpackConfig: string | any): WebpackWrapper {
+    try {
+      let config: any;
+
+      if (!webpackConfig) {
+        webpackConfig = './webpack.config.js';
+      }
+
+      if (typeof webpackConfig === 'string') {
+        let configPath = Path.isAbsolute(webpackConfig)
+            ? webpackConfig
+            : Path.join(process.cwd(), webpackConfig)
+          ;
+
+        config = require(configPath);
+      } else {
+        config = webpackConfig;
+      }
+
+      const configModule = resolveConfig(config);
+      return WebpackWrapper.fromCompiler(webpack(configModule));
+    } catch (err) {
+      throw new UserError(`Invalid webpack configuration. Please set a valid --webpack argument.\n${err.message}`);
+    }
+  }
+
+  static fromCompiler(compiler: any): WebpackWrapper {
+    return new WebpackWrapper(compiler);
   }
 }

@@ -9,7 +9,6 @@ import { CodeGenerator, CompilerHostContext } from '@angular/compiler-cli' ;
 import { WebpackWrapper } from './webpack-wrapper';
 import { WebpackChainModuleResolutionHostAdapter } from './webpack-chain-module-resolution-host-adapter';
 
-
 function codeGenFactory(webpackWrapper: WebpackWrapper) {
   return (ngOptions, cliOptions, program, host) => {
     const hostContext: CompilerHostContext = new WebpackChainModuleResolutionHostAdapter(host, webpackWrapper);
@@ -17,19 +16,30 @@ function codeGenFactory(webpackWrapper: WebpackWrapper) {
   }
 }
 
+export function runInternal(project: string, cliOptions: NgcCliOptions, webpack: WebpackWrapper): Promise<any> {
+  return tscWrappedMain(project, cliOptions, codeGenFactory(webpack))
+    .then( () => webpack.emitOnCompilationSuccess() )
+    .catch(e => {
+      webpack.emitOnCompilationError(e);
+      throw e;
+    });
+}
+
+export let run = runInternal;
+
 export function main(args: any, consoleError: (s: string) => void = console.error) {
+  run = ( () => {
+    return consoleError('NgcWebpackPlugin is configured for integrated compilation while the compiler executed from the command line, this is not valid. Integrated compilation cancelled.');
+  } ) as any;
+
   const project = args.p || args.project || '.';
   const cliOptions = new NgcCliOptions(args);
 
-  const webpack = new WebpackWrapper(args.webpack);
+  const webpack = WebpackWrapper.fromConfig(args.webpack);
 
-  return Promise.resolve()
-    .then( () => webpack.init() )
-    .then( () => tscWrappedMain(project, cliOptions, codeGenFactory(webpack)) )
-    .then( () => webpack.emitOnCompilationSuccess() )
+  return runInternal(project, cliOptions, webpack)
     .then(() => 0)
     .catch(e => {
-      webpack.emitOnCompilationError(e);
       if (e instanceof UserError || e instanceof SyntaxError) {
         consoleError(e.message);
         return Promise.resolve(1);

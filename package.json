@@ -1,6 +1,6 @@
 {
   "name": "ngc-webpack",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "A wrapper for the angular compiler-cli with webpack integration",
   "author": "Shlomi Assaf <shlomiasaf@gmail.com>",
   "license": "MIT",
@@ -17,6 +17,15 @@
     "laoder",
     "plugin"
   ],
+  "scripts": {
+    "clean:build": "npm run rimraf -- dist",
+    "clean:test": "npm run rimraf -- __codegen__",
+    "ci": "npm run test",
+    "test": "npm run build && ./node_modules/.bin/mocha dist/test spec --recursive",
+    "watch": "npm run build -- -w",
+    "build": "npm run clean:build && tsc --project tsconfig.json",
+    "rimraf": "rimraf"
+  },
   "bin": {
     "ngc-w": "./src/main.js"
   },
@@ -27,12 +36,37 @@
     "ts-node": "^2.0.0"
   },
   "devDependencies": {
-    "@angular/compiler": "^2.0.0",
-    "@angular/compiler-cli": "^2.0.0",
-    "@types/node": "^6.0.54",
-    "@types/webpack": "^2.0.0",
-    "typescript": "^2.0.0",
-    "webpack": "2.2.0-rc.3"
+    "@angular/common": "^2.4.1",
+    "@angular/compiler": "^2.4.1",
+    "@angular/compiler-cli": "^2.4.1",
+    "@angular/core": "^2.4.1",
+    "@angular/forms": "^2.4.1",
+    "@angular/http": "^2.4.1",
+    "@angular/platform-browser": "^2.4.1",
+    "@angular/platform-browser-dynamic": "^2.4.1",
+    "@angular/router": "^3.4.1",
+    "@types/chai": "^3.4.34",
+    "@types/mocha": "^2.2.35",
+    "@types/node": "^6.0.55",
+    "@types/webpack": "^2.1.0",
+    "angular2-template-loader": "^0.6.0",
+    "awesome-typescript-loader": "~3.0.0-beta.17",
+    "chai": "^3.5.0",
+    "css-loader": "^0.26.0",
+    "mocha": "^3.2.0",
+    "ng-router-loader": "^1.0.2",
+    "node-map-directory": "0.1.0",
+    "node-sass": "^4.1.1",
+    "raw-loader": "0.5.1",
+    "rimraf": "~2.5.4",
+    "rxjs": "^5.0.2",
+    "sass-loader": "^4.1.1",
+    "string-replace-loader": "1.0.5",
+    "style-loader": "^0.13.1",
+    "to-string-loader": "^1.1.4",
+    "typescript": "2.0.10",
+    "webpack": "2.2.0-rc.3",
+    "zone.js": "~0.7.4"
   },
   "bugs": {
     "url": "https://github.com/shlomiassaf/ngc-webpack/issues"
