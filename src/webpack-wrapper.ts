@@ -1,4 +1,5 @@
 import * as webpack from 'webpack';
+import * as Path from 'path';
 import { UserError } from '@angular/tsc-wrapped';
 
 import { NgcWebpackPlugin } from './plugin';
@@ -32,7 +33,23 @@ export class WebpackWrapper {
 
   init(): void {
     try {
-      const config = typeof this.webpackConfig === 'string' ? require(this.webpackConfig) : this.webpackConfig;
+      let config: any;
+
+      if (!this.webpackConfig) {
+        this.webpackConfig = './webpack.config.js';
+      }
+
+      if (typeof this.webpackConfig === 'string') {
+        let configPath = Path.isAbsolute(this.webpackConfig)
+            ? this.webpackConfig
+            : Path.join(process.cwd(), this.webpackConfig)
+          ;
+
+        config = require(configPath);
+      } else {
+        config = this.webpackConfig;
+      }
+
       this.config = resolveConfig(config);
     } catch (err) {
       throw new UserError(`Invalid webpack configuration. Please set a valid --webpack argument.\n${err.message}`);

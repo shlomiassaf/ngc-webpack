@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 require('ts-node/register');
 
-import * as Path from 'path';
 import 'reflect-metadata';
 import { main as tscWrappedMain, NgcCliOptions, UserError } from '@angular/tsc-wrapped';
 import { SyntaxError } from '@angular/compiler' ;
@@ -22,7 +21,7 @@ export function main(args: any, consoleError: (s: string) => void = console.erro
   const project = args.p || args.project || '.';
   const cliOptions = new NgcCliOptions(args);
 
-  const webpack = new WebpackWrapper(Path.join(process.cwd(), args.webpack || './webpack.config.js'));
+  const webpack = new WebpackWrapper(args.webpack);
 
   return Promise.resolve()
     .then( () => webpack.init() )
