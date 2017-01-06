@@ -1,4 +1,7 @@
+[![Build Status](https://travis-ci.org/shlomiassaf/ngc-webpack.svg?branch=master)](https://travis-ci.org/shlomiassaf/ngc-webpack)
+
 # Angular Template Compiler Wrapper for Webpack
+
 
 **compiler-cli** with webpack's loader chain.
 
