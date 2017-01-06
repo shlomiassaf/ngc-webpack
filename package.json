@@ -21,7 +21,7 @@
     "clean:build": "npm run rimraf -- dist",
     "clean:test": "npm run rimraf -- __codegen__",
     "ci": "npm run test",
-    "test": "npm run build && ./node_modules/.bin/mocha dist/test spec --recursive",
+    "test": "npm run build && ./node_modules/.bin/mocha dist/test/*.spec.js --recursive",
     "watch": "npm run build -- -w",
     "build": "npm run clean:build && tsc --project tsconfig.json",
     "rimraf": "rimraf"
