@@ -123,7 +123,7 @@ module.exports = function () {
 ```
 
 ## Why
-In the future I hope we all converge into 1 solution, `@ngtools/webpack`, if you have no issues with it, you don't need `ngc-wrapper`.
+In the future I hope we all converge into 1 solution, `@ngtools/webpack`, if you have no issues with it, you don't need `ngc-webpack`.
 
 However, `@ngtools/webpack` use it's own `ts` loader and controls the whole TS compilation process.  
 It's also a closed solution, you can't hook into it.
