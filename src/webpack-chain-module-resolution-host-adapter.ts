@@ -2,12 +2,10 @@ import { ModuleResolutionHost } from 'typescript';
 import { ModuleResolutionHostAdapter } from '@angular/compiler-cli' ;
 
 import { WebpackResourceLoader } from './webpack-resource-loader';
-import { PathTransformer } from './plugin';
 import { WebpackWrapper } from './webpack-wrapper';
 
 export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHostAdapter {
   private _loader: WebpackResourceLoader;
-  private _pathTransformer: PathTransformer;
 
   constructor(host: ModuleResolutionHost, public webpackWrapper: WebpackWrapper) {
     super(host);
@@ -23,7 +21,8 @@ export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHos
     } else if (!this.fileExists(newPath)) {
       throw new Error(`Compilation failed. Resource file not found: ${newPath}`);
     } else {
-      return this._loader.get(newPath);
+      return this._loader.get(newPath)
+        .then( source => Promise.resolve(this.webpackWrapper.sourceTransformer(newPath, source)) );
     }
 
   }

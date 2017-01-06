@@ -23,6 +23,10 @@ function resolveConfig(config: any): any {
   }
 }
 
+function findPlugin(compiler: any): NgcWebpackPlugin {
+  return compiler.options.plugins
+    .filter( p => p instanceof NgcWebpackPlugin)[0];
+}
 
 export class WebpackWrapper {
   public plugin: NgcWebpackPlugin;
@@ -32,8 +36,7 @@ export class WebpackWrapper {
 
 
   private constructor(public compiler: any) {
-    this.plugin = this.compiler.options.plugins
-      .filter( p => p instanceof NgcWebpackPlugin)[0];
+    this.plugin = findPlugin(compiler);
 
     this.hasPlugin = !!this.plugin;
   };
@@ -60,6 +63,14 @@ export class WebpackWrapper {
     }
   }
 
+  sourceTransformer(path: string, source: string): string | Promise<string> {
+    if (this.plugin && typeof this.plugin.options.sourceTransformer === 'function') {
+      return this.plugin.options.sourceTransformer(path, source);
+    } else {
+      return source;
+    }
+  }
+
   static fromConfig(webpackConfig: string | any): WebpackWrapper {
     try {
       let config: any;
@@ -80,7 +91,12 @@ export class WebpackWrapper {
       }
 
       const configModule = resolveConfig(config);
-      return WebpackWrapper.fromCompiler(webpack(configModule));
+      const compiler = webpack(configModule);
+
+      // setting the plugin is not mandatory so we check if it exists.
+      // if does it creates the wrapper, otherwise we need to create it.
+      const plugin = findPlugin(compiler);
+      return plugin ? plugin.webpackWrapper : WebpackWrapper.fromCompiler(compiler);
     } catch (err) {
       throw new UserError(`Invalid webpack configuration. Please set a valid --webpack argument.\n${err.message}`);
     }

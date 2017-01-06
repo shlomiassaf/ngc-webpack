@@ -4,6 +4,7 @@ import { run } from './main';
 import { WebpackWrapper } from "./webpack-wrapper";
 
 export type PathTransformer = (path: string) => string;
+export type SourceTransformer = (path: string, source: string) => string | Promise<string>;
 export type OnCompilationSuccess = () => void;
 export type OnCompilationError = (err: Error) => void;
 
@@ -18,6 +19,7 @@ export interface NgcWebpackPluginOptions {
   disabled?: boolean;
 
   pathTransformer?: PathTransformer;
+  sourceTransformer?: SourceTransformer;
   onCompilationSuccess?: OnCompilationSuccess;
   onCompilationError?: OnCompilationError;
 
@@ -53,7 +55,11 @@ export class NgcWebpackPlugin {
   private aotPass: boolean;
   private debug = true;
 
-  constructor(public options: NgcWebpackPluginOptions = {} as any) { }
+  constructor(public options: NgcWebpackPluginOptions = {} as any) {
+    if (!options.hasOwnProperty('disabled')) {
+      options.disabled = false;
+    }
+  }
 
   apply(compiler: any) {
     if (this.options.disabled === true) return;
