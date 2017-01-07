@@ -1,6 +1,6 @@
 import * as Path from 'path';
 import { NgcCliOptions } from '@angular/tsc-wrapped';
-import { run } from './main';
+import { run, isCli } from './main';
 import { WebpackWrapper } from "./webpack-wrapper";
 
 export type PathTransformer = (path: string) => string;
@@ -66,7 +66,9 @@ export class NgcWebpackPlugin {
 
     this.compiler = compiler;
     this.webpackWrapper = WebpackWrapper.fromCompiler(this.compiler);
-    this.aotPass = true;
+
+    // if not from cli and no config file then we never have AOT pass...
+    this.aotPass = !isCli() && !this.options.tsConfig ? false : true;
 
     compiler.plugin('run', (compiler, next) => this.run(next) );
     compiler.plugin('watch-run', (compiler, next) => this.run(next) );

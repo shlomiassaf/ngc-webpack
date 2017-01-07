@@ -7,7 +7,7 @@ import { platformBrowser } from '@angular/platform-browser';
  * App Module
  * our top level module that holds all of our components
  */
-import { AppModuleNgFactory } from '../../__codegen__/test/ng-app/app/app.module.ngfactory';
+import { AppModuleNgFactory } from '../../dist/test/codegen_plugin/test/ng-app/app/app.module.ngfactory';
 
 /*
  * Bootstrap our Angular app with a top level NgModule

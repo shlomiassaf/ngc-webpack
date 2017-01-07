@@ -6,7 +6,7 @@ const CommonsChunkPlugin = require('webpack/lib/optimize/CommonsChunkPlugin');
 const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
 const LoaderOptionsPlugin = require('webpack/lib/LoaderOptionsPlugin');
 
-const ngcWebpack = require('./dist/index');
+const ngcWebpack = require('../../../dist/index');
 
 module.exports = function () {
 
@@ -14,12 +14,12 @@ module.exports = function () {
     devtool: 'cheap-module-source-map',
 
     entry: {
-      'main':  './test/ng-app/main.browser.aot.ts'
+      'main':  './test/ng-app/main.browser.aot.cli.ts'
     },
 
     output: {
 
-      path: 'dist/test/ng-app',
+      path: `dist/test/ng-app-cli`,
 
       filename: '[name].bundle.js',
 
@@ -31,11 +31,6 @@ module.exports = function () {
       libraryTarget: 'var',
     },
 
-    /*
-     * Options affecting the resolving of modules.
-     *
-     * See: http://webpack.github.io/docs/configuration.html#resolve
-     */
     resolve: {
       extensions: ['.ts', '.js'],
     },
@@ -43,23 +38,16 @@ module.exports = function () {
     module: {
       rules: [
 
-        /*
-         * Typescript loader support for .ts and Angular 2 async routes via .async.ts
-         * Replace templateUrl and stylesUrl with require()
-         *
-         * See: https://github.com/s-panferov/awesome-typescript-loader
-         * See: https://github.com/TheLarkInn/angular2-template-loader
-         */
         {
           test: /\.ts$/,
           use: [
-            'awesome-typescript-loader?{configFileName: "tsconfig.integration.json"}',
+            `awesome-typescript-loader?{configFileName: "tsconfig.cli.json"}`,
             'angular2-template-loader',
             {
               loader: 'ng-router-loader',
               options: {
                 loader: 'async-require',
-                genDir: '__codegen__',
+                genDir: 'dist/test/codegen_cli',
                 aot: true
               }
             }
@@ -98,17 +86,11 @@ module.exports = function () {
       new CheckerPlugin(),
       new LoaderOptionsPlugin({}),
       new ngcWebpack.NgcWebpackPlugin({
-        tsConfig: path.resolve('./tsconfig.integration.json'),
-        empty: path.resolve('./test/ng-app/empty.js')
+        pathTransformer: (p) => p.endsWith('app.component.css') ? path.resolve('test/testing/replaced-resource.scss') : p,
+        sourceTransformer: (p, s) => p.endsWith('home.component.html') ? 'HTML WAS HIJACKED BY A TEST!!!' : s
       })
     ],
 
-    /*
-     * Include polyfills or mocks for various node stuff
-     * Description: Node configuration
-     *
-     * See: https://webpack.github.io/docs/configuration.html#node
-     */
     node: {
       global: true,
       crypto: 'empty',

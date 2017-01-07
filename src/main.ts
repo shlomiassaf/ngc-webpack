@@ -51,8 +51,12 @@ export function main(args: any, consoleError: (s: string) => void = console.erro
     });
 }
 
+export function isCli(): boolean {
+  return require.main === module;
+}
+
 // CLI entry point
-if (require.main === module) {
+if (isCli()) {
   const args = require('minimist')(process.argv.slice(2));
   main(args).then((exitCode: number) => process.exit(exitCode));
 }

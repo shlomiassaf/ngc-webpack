@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "es2015",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "noEmit": true,
+    "noEmitHelpers": true,
+    "strictNullChecks": false,
+    "lib": [
+      "es2015",
+      "dom"
+    ],
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "test/ng-app/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src",
+    "test/testing",
+    "test/*.spec.ts",
+    "test/ng-app/main.browser.aot.cli.ts",
+    "test/ng-app/main.browser.aot.plugin.ts"
+  ],
+  "awesomeTypescriptLoaderOptions": {
+    "forkChecker": true,
+    "useWebpackText": true
+  },
+  "angularCompilerOptions": {
+    "genDir": "dist/test/codegen_ngc"
+  },
+  "compileOnSave": false,
+  "buildOnSave": false,
+  "atom": { "rewriteTsconfig": false }
+}

@@ -25,14 +25,17 @@
     "node_modules",
     "dist",
     "src",
-    "test/*.spec.ts"
+    "test/testing",
+    "test/*.spec.ts",
+    "test/ng-app/main.browser.aot.ngc.ts",
+    "test/ng-app/main.browser.aot.plugin.ts"
   ],
   "awesomeTypescriptLoaderOptions": {
     "forkChecker": true,
     "useWebpackText": true
   },
   "angularCompilerOptions": {
-    "genDir": "__codegen__"
+    "genDir": "dist/test/codegen_cli"
   },
   "compileOnSave": false,
   "buildOnSave": false,
