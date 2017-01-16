@@ -2,9 +2,14 @@
 require('ts-node/register');
 
 import 'reflect-metadata';
-import { main as tscWrappedMain, NgcCliOptions, UserError } from '@angular/tsc-wrapped';
 import { SyntaxError } from '@angular/compiler' ;
-import { CodeGenerator, CompilerHostContext } from '@angular/compiler-cli' ;
+import {
+  CodeGenerator,
+  CompilerHostContext,
+  main as tscWrappedMain,
+  NgcCliOptions,
+  UserError
+} from '@angular/compiler-cli' ;
 
 import { WebpackWrapper } from './webpack-wrapper';
 import { WebpackChainModuleResolutionHostAdapter } from './webpack-chain-module-resolution-host-adapter';
@@ -18,7 +23,7 @@ function codeGenFactory(webpackWrapper: WebpackWrapper) {
 
 export function runInternal(project: string, cliOptions: NgcCliOptions, webpack: WebpackWrapper): Promise<any> {
   return tscWrappedMain(project, cliOptions, codeGenFactory(webpack))
-    .then( () => webpack.emitOnCompilationSuccess() )
+    .then(() => webpack.emitOnCompilationSuccess())
     .catch(e => {
       webpack.emitOnCompilationError(e);
       throw e;

@@ -1,6 +1,6 @@
 import * as webpack from 'webpack';
 import * as Path from 'path';
-import { UserError } from '@angular/tsc-wrapped';
+import { UserError } from '@angular/compiler-cli';
 
 import { NgcWebpackPlugin } from './plugin';
 

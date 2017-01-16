@@ -1,5 +1,5 @@
 import * as Path from 'path';
-import { NgcCliOptions } from '@angular/tsc-wrapped';
+import { NgcCliOptions } from '@angular/compiler-cli';
 import { run, isCli } from './main';
 import { WebpackWrapper } from "./webpack-wrapper";
 
