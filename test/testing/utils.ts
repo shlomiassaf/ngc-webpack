@@ -60,7 +60,7 @@ export function runWebpack(config: any): { compiler: Compiler, done: Promise<Sta
  * @param cmd
  * @returns {Promise<T>}
  */
-export function spawn(cmd): Promise<void> {
+export function spawn(cmd): Promise<any> {
   return new Promise( (resolve, reject) => {
     const args = cmd.split(' ');
     const spawnInstance = spawnFactory(args.shift(), args, {stdio: "inherit"});
