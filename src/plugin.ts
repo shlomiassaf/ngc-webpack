@@ -101,14 +101,14 @@ export class NgcWebpackPlugin {
   }
 
   beforeResolve(result: any, callback: (err: Error | null, result) => void): void {
-    if (!this.aotPass && this.options.resourceOverride && this.webpackWrapper.aotResources[result.request] === true) {
+    if (!this.aotPass && this.options.resourceOverride && this.webpackWrapper.aotResources[Path.normalize(result.request)] === true) {
       result.request = this.options.resourceOverride;
     }
     callback(null, result);
   }
 
   afterResolve(result: any, callback: (err: Error | null, result) => void): void {
-    if (!this.aotPass && this.options.resourceOverride && this.webpackWrapper.aotResources[result.resource] === true) {
+    if (!this.aotPass && this.options.resourceOverride && this.webpackWrapper.aotResources[Path.normalize(result.resource)] === true) {
       result.resource = Path.resolve(Path.dirname(result.resource), this.options.resourceOverride);
     }
     callback(null, result);

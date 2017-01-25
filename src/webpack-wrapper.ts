@@ -54,7 +54,7 @@ export class WebpackWrapper {
   }
 
   pathTransformer(path: string): string {
-    this.aotResources[path] = true;
+    this.aotResources[Path.normalize(path)] = true;
 
     if (this.plugin && typeof this.plugin.options.pathTransformer === 'function') {
       return this.plugin.options.pathTransformer(path);
