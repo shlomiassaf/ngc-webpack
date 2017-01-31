@@ -142,6 +142,13 @@ to the source templates that still exists in the `@Component` declaration.
 The end result is a redundant copy of the templates.
 Use this option to replace the templates with an empty content, this will reduce the bundle significantly.
 
+### resourceOverride and assets
+If you reference assets in your styles/html that are not inlined and you expect a loader (e.g. url-loader) 
+to copy them, don't use the `resourceOverride` feature as it does not support this feature at the moment.
+
+With `resourceOverride` the end result is that webpack will replace the asset with an href to the public
+assets folder but it will not copy the files. This happens because the replacement is done in the AOT compilation
+phase but in the bundling it won't happen (it's being replaced with and empty file...)
 
 ###pathTransformer
 A Hook that allows changing a given template (html/styles) path.
