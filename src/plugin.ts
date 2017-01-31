@@ -46,6 +46,11 @@ export interface NgcWebpackPluginOptions {
    * @default undefined
    */
   resourceOverride?: string;
+
+  /**
+   * Angular compiler CLI options
+   */
+  cliOptions?: any;
 }
 
 export class NgcWebpackPlugin {
@@ -84,7 +89,7 @@ export class NgcWebpackPlugin {
       if (this.debug) {
         console.log('Starting compilation using the angular compiler.');
       }
-      run(this.options.tsConfig, new NgcCliOptions({}), this.webpackWrapper)
+      run(this.options.tsConfig, new NgcCliOptions(this.options.cliOptions || {}), this.webpackWrapper)
         .then( () => undefined ) // ensure the last then get's undefined if no error.
         .catch(err => err)
         .then(err => {

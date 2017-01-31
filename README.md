@@ -119,6 +119,11 @@ export interface NgcWebpackPluginOptions {
    * @default undefined
    */
   resourceOverride?: string;
+
+  /**
+   * Angular compiler CLI options
+   */
+  cliOptions?: any;
 }
 ```
 
