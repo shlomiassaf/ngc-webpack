@@ -18,7 +18,9 @@ export class WebpackResourceLoader implements ResourceLoader {
   private _context: string;
   private _uniqueId = 0;
 
-  constructor(private _parentCompilation: any) {
+  private emittedFiles: any = {};
+
+  constructor(private _parentCompilation: any, private collectAssets: boolean = false) {
     this._context = _parentCompilation.context;
   }
 
@@ -79,6 +81,16 @@ export class WebpackResourceLoader implements ResourceLoader {
             delete this._parentCompilation.assets[outputName];
           }
 
+          if (this.collectAssets) {
+            entries[0].modules.forEach(m => {
+              if (m.assets) {
+                Object.keys(m.assets).forEach( k => {
+                  this.emittedFiles[k] = m.assets[k];
+                });
+              }
+            });
+          }
+
           resolve({
             // Hash of the template entry point.
             hash: entries[0].hash,
@@ -114,5 +126,9 @@ export class WebpackResourceLoader implements ResourceLoader {
   get(filePath: string): Promise<string> {
     return this._compile(filePath, readFileSync(filePath, 'utf8'))
       .then((result: any) => this._evaluate(result.outputName, result.content));
+  }
+
+  getExternalAssets(): any {
+    return this.emittedFiles;
   }
 }

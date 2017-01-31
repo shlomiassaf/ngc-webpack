@@ -2,14 +2,19 @@ import { ModuleResolutionHost } from 'typescript';
 import { ModuleResolutionHostAdapter } from '@angular/compiler-cli' ;
 
 import { WebpackResourceLoader } from './webpack-resource-loader';
-import { WebpackWrapper } from './webpack-wrapper';
+import { WebpackWrapper, ExternalAssetsSource } from './webpack-wrapper';
 
-export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHostAdapter {
+export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHostAdapter implements ExternalAssetsSource {
   private _loader: WebpackResourceLoader;
 
   constructor(host: ModuleResolutionHost, public webpackWrapper: WebpackWrapper) {
     super(host);
-    this._loader = new WebpackResourceLoader(this.webpackWrapper.compiler.createCompilation());
+    this._loader = new WebpackResourceLoader(this.webpackWrapper.compiler.createCompilation(), !!webpackWrapper.plugin.options.resourceOverride);
+    webpackWrapper.externalAssetsSource = this;
+  }
+
+  get externalAssets(): any {
+    return this._loader.getExternalAssets();
   }
 
   readResource(path: string): Promise<string> {

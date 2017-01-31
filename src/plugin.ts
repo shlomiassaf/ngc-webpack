@@ -77,11 +77,21 @@ export class NgcWebpackPlugin {
 
     compiler.plugin('run', (compiler, next) => this.run(next) );
     compiler.plugin('watch-run', (compiler, next) => this.run(next) );
+    compiler.plugin('emit', (compilation, next) => this.emit(compilation, next) );
 
     compiler.plugin("normal-module-factory", (nmf: any) => {
       nmf.plugin('before-resolve', (result, callback) => this.beforeResolve(result, callback) );
       nmf.plugin('after-resolve', (result, callback) => this.afterResolve(result, callback) );
     });
+  }
+
+  emit(compilation: any, next: (err?: Error) => any): void {
+    if (!!this.options.resourceOverride && this.webpackWrapper.externalAssetsSource) {
+      const externalAssets = this.webpackWrapper.externalAssetsSource.externalAssets || {};
+      Object.keys(externalAssets).forEach( k => compilation.assets[k] = externalAssets[k] );
+    }
+
+    next();
   }
 
   run(next: (err?: Error) => any): void {

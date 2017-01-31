@@ -28,18 +28,30 @@ function findPlugin(compiler: any): NgcWebpackPlugin {
     .filter( p => p instanceof NgcWebpackPlugin)[0];
 }
 
+export interface ExternalAssetsSource {
+  externalAssets: any;
+}
+
 export class WebpackWrapper {
   public plugin: NgcWebpackPlugin;
   public aotResources: any = {}; //TODO: use Map if in node 5
 
   private hasPlugin: boolean;
-
+  private _externalAssetsSource: ExternalAssetsSource;
 
   private constructor(public compiler: any) {
     this.plugin = findPlugin(compiler);
 
     this.hasPlugin = !!this.plugin;
   };
+
+  get externalAssetsSource(): ExternalAssetsSource {
+    return this._externalAssetsSource;
+  }
+
+  set externalAssetsSource(value: ExternalAssetsSource) {
+    this._externalAssetsSource = value;
+  }
 
   emitOnCompilationSuccess(): void {
     if (this.hasPlugin && typeof this.plugin.options.onCompilationSuccess === 'function') {
