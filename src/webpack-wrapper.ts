@@ -65,19 +65,30 @@ export class WebpackWrapper {
     }
   }
 
-  pathTransformer(path: string): string {
+  resourcePathTransformer(path: string): string {
     this.aotResources[Path.normalize(path)] = true;
 
-    if (this.plugin && typeof this.plugin.options.pathTransformer === 'function') {
-      return this.plugin.options.pathTransformer(path);
+    const fn = this.plugin && (this.plugin.options.resourcePathTransformer || this.plugin.options.pathTransformer);
+
+    if (typeof fn === 'function') {
+      return fn(path);
     } else {
       return path;
     }
   }
 
-  sourceTransformer(path: string, source: string): string | Promise<string> {
-    if (this.plugin && typeof this.plugin.options.sourceTransformer === 'function') {
-      return this.plugin.options.sourceTransformer(path, source);
+  resourceTransformer(path: string, source: string): string | Promise<string> {
+    const fn = this.plugin && (this.plugin.options.resourceTransformer || this.plugin.options.sourceTransformer);
+    if (typeof fn === 'function') {
+      return fn(path, source);
+    } else {
+      return source;
+    }
+  }
+
+  readFileTransformer(path: string, source: string): string {
+    if (this.plugin && typeof this.plugin.options.readFileTransformer === 'function') {
+      return this.plugin.options.readFileTransformer(path, source);
     } else {
       return source;
     }

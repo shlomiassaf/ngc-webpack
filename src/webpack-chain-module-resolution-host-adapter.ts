@@ -9,7 +9,7 @@ export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHos
 
   constructor(host: ModuleResolutionHost, public webpackWrapper: WebpackWrapper) {
     super(host);
-    this._loader = new WebpackResourceLoader(this.webpackWrapper.compiler.createCompilation(), webpackWrapper.plugin && !!webpackWrapper.plugin.options.resourceOverride);
+    this._loader = new WebpackResourceLoader(webpackWrapper.compiler.createCompilation());
     webpackWrapper.externalAssetsSource = this;
   }
 
@@ -17,9 +17,13 @@ export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHos
     return this._loader.getExternalAssets();
   }
 
+  readFile(path: string): string {
+    return <any>this.webpackWrapper.readFileTransformer(path, super.readFile(path));
+  }
+
   readResource(path: string): Promise<string> {
 
-    const newPath = this.webpackWrapper.pathTransformer(path);
+    const newPath = this.webpackWrapper.resourcePathTransformer(path);
 
     if (newPath === '') {
       return Promise.resolve(newPath);
@@ -27,7 +31,7 @@ export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHos
       throw new Error(`Compilation failed. Resource file not found: ${newPath}`);
     } else {
       return this._loader.get(newPath)
-        .then( source => Promise.resolve(this.webpackWrapper.sourceTransformer(newPath, source)) );
+        .then( source => Promise.resolve(this.webpackWrapper.resourceTransformer(newPath, source)) );
     }
 
   }

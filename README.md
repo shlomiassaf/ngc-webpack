@@ -1,26 +1,25 @@
 [![Build Status](https://travis-ci.org/shlomiassaf/ngc-webpack.svg?branch=master)](https://travis-ci.org/shlomiassaf/ngc-webpack)
 
-# Angular Template Compiler Wrapper for Webpack
+# ngc-webpack
+`@angular/compiler-cli` Wrapper for Webpack
 
-**compiler-cli** with webpack's loader chain.
-
-> Note: Version 1.1.0 allows using the plugin to manage angular compilation without the
-need to run the compilation command from the command line before webpack is executed.
-It also allows removing `@Component` templates (template/styles) from the bundle since they 
-become not used duplicates after AOT compilation.  
-This will be documented soon, meanwhile see the `AngularClass/angular2-webpack-starter` repo for an example.
-
-
-A wrapper around the [compiler-cli](https://github.com/angular/angular/tree/master/modules/%40angular/compiler-cli)
-that pass `@Component` resources (*templateUrl, styleUrls*) through webpack's build loader chain.  
+Key features:  
+  - Angular AOT compilation webpack plugin outside of the `angular-cli` eco-system      
+  - Pass resources through webpack's loader chain (template, styles, etc...)  
+  - Hooks into the AOT compilation process (replaces source files, metadata files, resource files)  
+  - Not restricted to a TypeScript loader, use any TS loader you want  
+  - Does not contain an `@angular/router` lazy module loader (you can use [ng-router-loader](https://github.com/shlomiassaf/ng-router-loader))
 
 
-Currently apply the loader chain only on `@Component` resources.
+**ngc-webpack** is quite similar to [@ngtools/webpack](https://github.com/angular/angular-cli/tree/master/packages/%40ngtools/webpack).  
+It does not do any actual compilation, this is done by angular tools. It just allows some 
+customization to the process.
 
 > `ngc-webpack` is built of some constructs from `@ngtools/webpack`.
 
 ## Background
-The angular compiler generate additional JS runtime files that are part of the final bundle, these files reflect the `@Component` resources (html, css) as JS executable code.
+The angular compiler generate additional JS runtime files that are part of the final bundle, 
+these files reflect the `@Component` resources (html, css) as JS executable code.
 
 When compiling AOT we need to add them to the final bundle.
 > When compiling JIT these files are added to the VM on runtime, but that's not relevant for our context.
@@ -91,15 +90,66 @@ export interface NgcWebpackPluginOptions {
    */
   disabled?: boolean;
 
-  pathTransformer?: PathTransformer;
-  sourceTransformer?: SourceTransformer;
+  /**
+   * A hook that invokes before the `compiler-cli` start the compilation process.
+   * (loader: { get(filename: string): Promise<string> }) => Promise<void>;
+   * 
+   * The hook accepts an object with a `get` method that acts as a webpack compilation, being able to compile a file and return it's content.
+   * @param loader
+   */
+  beforeRun?: BeforeRunHandler
+
+  /**
+   * Transform a source file (ts, js, metadata.json, summery.json)
+   * (path: string, source: string) => string;
+   * 
+   * Note that source code transformation is sync, you can't return a promise (contrary to `resourcePathTransformer`).  
+   * This means that you can not use webpack compilation (or any other async process) to alter source code context.  
+   * If you know the files you need to transform, use the `beforeRun` hook.
+   */
+  readFileTransformer?: ReadFileTransformer;
+
+  
+  /**
+   * Transform the path of a resource (html, css, etc)
+   * (path: string) => string;
+   */
+  resourcePathTransformer?: ResourcePathTransformer;
+  
+  /**
+   * Transform a resource (html, css etc)
+   * (path: string, source: string) => string | Promise<string>;
+   */
+  resourceTransformer?: ResourceTransformer;
+  
+  /**
+   * Fires then the compilation ended with no errors.
+   * () => void;
+   * 
+   * > If you throw from the callback the process will exit with failure and print the error message.
+   * This allows some validation for `resourcePathTransformer`, to check the state one finished and conclude about the result.
+   */
+  
   onCompilationSuccess?: OnCompilationSuccess;
+  /**
+   * Fires then the compilation ended with an error.
+   * (err: Error) => void;
+   * 
+   * > If you throw from the callback the process will exit with failure and print the error message.
+   * This allows some validation for `resourcePathTransformer`, to check the state one finished and conclude about the result.
+   *   
+   * > Throwing from `onCompilationError` is like re-throw with a new error.
+   * Currently it's not possible to suppress an error.
+   */
   onCompilationError?: OnCompilationError;
 
   /**
    * A path to a tsconfig file, if set the AOT compilation is triggered from the plugin.
    * When setting a tsconfig you do not need to run the compiler from the command line.
-   *
+   * 
+   * If you are not setting a config file the compilation will not run and you need to run it before webpack starts.
+   * When AOT compiling outside of the plugin (i.e. no tsconfig property), you can still use the 
+   * plugin to access the hooks, but remember that the hooks will run from the command line process (e.g: `ngc-w`) 
    * @default undefined
    */
   tsConfig?: string;
@@ -116,6 +166,14 @@ export interface NgcWebpackPluginOptions {
    * usually has small amount of loaders hence less performance impact.
    *
    * > This feature is doing NormalModuleReplacementPlugin for AOT compiled resources.
+   * 
+   * ### resourceOverride and assets
+   * If you reference assets in your styles/html that are not inlined and you expect a loader (e.g. url-loader)
+   * to copy them, don't use the `resourceOverride` feature as it does not support this feature at the moment.
+   * With `resourceOverride` the end result is that webpack will replace the asset with an href to the public
+   * assets folder but it will not copy the files. This happens because the replacement is done in the AOT compilation
+   * phase but in the bundling it won't happen (it's being replaced with and empty file...)
+   * 
    * @default undefined
    */
   resourceOverride?: string;
@@ -127,84 +185,21 @@ export interface NgcWebpackPluginOptions {
 }
 ```
 
-###tsConfig
-Path to a tsconfig file, if set the AOT compilation is triggered from the plugin.
-When setting a tsconfig you do not need to run the compiler from the command line.  
-If you are not setting a config file the compilation will not run and you need to run it before webpack starts.  
-Whe not compiling using the plugin, use the plugin to access the hooks, but remember that the hooks will run from
- the command line process (e.g: `ngc-w`)
 
-### resourceOverride
-AOT converts all `@Component` templates (html/styles) into runtime code, these are **additional** files 
-added to the bundle.  
-When webpack bundles the application it adds these new files to the bundle but still see's the reference  
-to the source templates that still exists in the `@Component` declaration.  
-The end result is a redundant copy of the templates.
-Use this option to replace the templates with an empty content, this will reduce the bundle significantly.
+## Why?  
+Initially, `ngc-webpack` was built to cover the gap between "vanilla" webpack driven angular applications 
+and `angular-cli` application. There was no tool to handle that and production builds for angular application 
+was impossible unless using the cli. `ngc-webpack` covered that gap.
 
-### resourceOverride and assets
-If you reference assets in your styles/html that are not inlined and you expect a loader (e.g. url-loader) 
-to copy them, don't use the `resourceOverride` feature as it does not support this feature at the moment.
+Nowdays, the `angular-cli` is pretty mature, especially with the webpack export capability. 
+If you have a simple build process I suggest you use the CLI, in fact I suggest you use the 
+CLI by default and only if you face a scenario that **ngc-webpack** can solve, use it. 
 
-With `resourceOverride` the end result is that webpack will replace the asset with an href to the public
-assets folder but it will not copy the files. This happens because the replacement is done in the AOT compilation
-phase but in the bundling it won't happen (it's being replaced with and empty file...)
-
-###pathTransformer
-A Hook that allows changing a given template (html/styles) path.
-The `pathTransformer` hooks is a callback that get's a path (string) and return a path (different to same).  
-If the returned path is an empty string ('') the content of the resource is ignored and will resolve to an empty string.
-
-###sourceTransformer
-A Hook that allows changing a given template (html/styles) content.
-The `sourceTransformer` hooks is a callback that get's the content (string) and return content (different to same, can also return Promise<string>).  
-
-
-In addition there are 2 callbacks invoked when the process ends:  
-  - **onCompilationSuccess: () => void**  
-  Fires then the compilation ended with no errors.
-  - **onCompilationError?: (error: Error) => void**  
-  Fires then the compilation ended with an error.
-  
-If you throw from these callbacks the process will exit with failure and print the error message.
-This allows some validation for `pathTransformer`, to check the state one finished and conclude about the result.
-
-> Throwing from `onCompilationError` is like re-throw with a new error.  
-Currently it's not possible to suppress an error.
-
-Example (webpack.config module)
-```js
-const NgcWebpack = require('ngc-webpack');
-
-module.exports = function () {
-  return {
-    /* All webpack configuration stuff... */
-    plugins: [
-      /* Webpack plugins here... */
-      new NgcWebpack.NgcWebpackPlugin({
-        pathTransformer: function(resourcePath) {
-          /*
-              If we compile a material button, remove it style.
-           */
-          const MAT_BUTTON_RE = /(^.*\/node_modules\/@angular\/material\/button\/button\.css$)/;
-          if (MAT_BUTTON_RE.test(resourcePath)) {
-            return '';
-          }
-          return resourcePath;
-        }
-      })
-    ]
-  }
-}
-```
-
-## Why
-In the future I hope we all converge into 1 solution, `@ngtools/webpack`, if you have no issues with it, you don't need `ngc-webpack`.
-
-However, `@ngtools/webpack` use it's own `ts` loader and controls the whole TS compilation process.  
-It's also a closed solution, you can't hook into it.
-
-if this is an issue for you, use `ngc-webpack`.
-
-> NOTE: I strongly suggest trying to use `@ngtools/webpack` if it works for you stay with it.  
-My bet is that it will be the de-facto tool for AOT with webpack.
+## My use-case
+In the company I work for, the build process requires some modification to 3rd-party libraries.  
+This modification involves recompiling SCSS files and other funky stuff. Using **ngc-webpack** 
+we are able to change `ComponentMetadata#styles` of already AOT compiled angular components.  
+ 
+## Blog post:
+If time allows, I will write a blog post on how we completely restyled the `@angular/material` 
+library by compiling our versions of material components SCSS files and replacing them with the, already compiled, styles.  
