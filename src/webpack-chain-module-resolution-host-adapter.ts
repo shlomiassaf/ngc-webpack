@@ -9,7 +9,7 @@ export class WebpackChainModuleResolutionHostAdapter extends ModuleResolutionHos
 
   constructor(host: ModuleResolutionHost, public webpackWrapper: WebpackWrapper) {
     super(host);
-    this._loader = new WebpackResourceLoader(this.webpackWrapper.compiler.createCompilation(), !!webpackWrapper.plugin.options.resourceOverride);
+    this._loader = new WebpackResourceLoader(this.webpackWrapper.compiler.createCompilation(), webpackWrapper.plugin && !!webpackWrapper.plugin.options.resourceOverride);
     webpackWrapper.externalAssetsSource = this;
   }
 
