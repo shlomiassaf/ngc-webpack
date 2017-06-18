@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-require('ts-node/register');
 
 import 'reflect-metadata';
 import { SyntaxError } from '@angular/compiler' ;
@@ -62,6 +61,7 @@ export function isCli(): boolean {
 
 // CLI entry point
 if (isCli()) {
+  require('ts-node/register');
   const args = require('minimist')(process.argv.slice(2));
   main(args).then((exitCode: number) => process.exit(exitCode));
 }

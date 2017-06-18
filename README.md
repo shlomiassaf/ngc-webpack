@@ -1,5 +1,28 @@
 [![Build Status](https://travis-ci.org/shlomiassaf/ngc-webpack.svg?branch=master)](https://travis-ci.org/shlomiassaf/ngc-webpack)
 
+### Version 3.0 - BREAKING CHANGE
+Version 3.0.0 does not contain API breaking changes but does contain a logical
+breaking change that might affect some setups.
+
+The only change concerns automatically registering **ts-node**
+
+Up to 2.0.0 **ngc-webpack** automatically loaded **ts-node**:
+```js
+require('ts-node/register');
+```
+
+This is ok when running **ngc-webpack** from the CLI.
+However, when using the **ngc-webpack programmatically it might cause
+unexpected errors, for example if one wants to invoke a custom ts-node registration.
+
+From **ngc-webpack@3.0.0** using **ngc-webpack** from your code you need
+to register ts-node manually.
+
+> Most setups will run **ngc-webpack** using the webpack plugin, which is
+running it from code (and not from CLI) but Webpack (and ts loaders)
+should automatically register ts-node so the impact should be minimal.
+
+
 # ngc-webpack
 `@angular/compiler-cli` Wrapper for Webpack
 
