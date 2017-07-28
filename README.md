@@ -165,6 +165,8 @@ This a small to medium size application.
 |      Diff      |                          **3** |                    **127** |   |                          **5** |                     **24** |
 
 
+> Running **without the loader** was done using the `resourceOverride` feature of **ngc-webpack** plugin. It means that the resources are not present in both cases and does not effect the result.
+
 ##### Bundle Size
 The bundle size is also reduces, around 7% for non minified and 5% for minified.
 This is substantial and will increase over time.
