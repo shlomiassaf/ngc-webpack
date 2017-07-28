@@ -29,11 +29,14 @@ export class AotTransformWalker extends BaseTransformWalker<AotWalkerContext> {
   }
 
   walk(): ts.Node {
-    // TODO: this to be dynamic.
-    if (this.sourceFile.fileName.indexOf('/compiled/') > -1) {
+    if (this.sourceFile.fileName.endsWith('ngfactory.ts')) {
       return this.sourceFile;
     } else {
-      return super.walk();
+      const sourceFile: ts.SourceFile = <any>super.walk();
+      if (sourceFile !== this.sourceFile) {
+        sourceFile['symbol'] = this.sourceFile['symbol'];
+      }
+      return sourceFile;
     }
   }
 

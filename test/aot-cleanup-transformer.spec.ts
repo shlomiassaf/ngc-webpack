@@ -8,7 +8,7 @@ import { expect } from 'chai';
 import { tsConfig, compile, onNgToolsLoaderHit } from './testing/aot-cleanup-test-utils';
 import { runWebpack, resolveWebpackConfig, getTsConfigMeta, configs } from './testing/utils';
 
-const srcFileDir = Path.join(__dirname, 'aot-cleanup-transformer');
+const srcFileDir = Path.join(process.cwd(), 'test', 'aot-cleanup-transformer');
 const compiled: any = compile([Path.join(srcFileDir, 'module.ts')]);
 const ngToolsCompiled: any = {};
 
@@ -62,7 +62,7 @@ describe('AOT Cleanup transformer', async () => {
 
       // TODO: This is to handle a bug in ngTools where a non-angular parameter decorator
       //        results in two identical ctorParameters functions, one after the other.
-      if (key === 'service.ts') {
+      if (key === 'service.js') {
         for (let i=0; i<ngToolsSource.length; i++) {
           if (ngToolsSource[i].startsWith('    MyServiceService.ctorParameters = function ()')) {
             // handle same bug as the one in component.ts
@@ -82,7 +82,7 @@ describe('AOT Cleanup transformer', async () => {
       }
 
       // TODO: This is to handle a bug in ngTools where a interfaces and types are treated as values.
-      else if (key === 'component.ts') {
+      else if (key === 'component.js') {
         for (let i=0; i<ngToolsSource.length; i++) {
           if (ngToolsSource[i].startsWith('    MyComponentComponent.ctorParameters = function ()')) {
             ngToolsSource[i] = ngToolsSource[i].replace('MyInterface', 'Object');

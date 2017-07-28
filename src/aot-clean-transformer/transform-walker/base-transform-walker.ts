@@ -19,7 +19,6 @@ export class BaseTransformWalker<T extends WalkerContext = WalkerContext> {
       return this.sourceFile;
     } else {
       const visited = this.visitNode(this.sourceFile);
-      ts.addEmitHelpers(visited, this.context.readEmitHelpers());
       return visited;
 
     }
