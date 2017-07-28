@@ -23,7 +23,7 @@ function resolveConfig(config: any): any {
   }
 }
 
-function findPlugin(compiler: any): NgcWebpackPlugin {
+export function findPlugin(compiler: any): NgcWebpackPlugin {
   return compiler.options.plugins
     .filter( p => p instanceof NgcWebpackPlugin)[0];
 }

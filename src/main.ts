@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import 'reflect-metadata';
-import { SyntaxError } from '@angular/compiler' ;
+import { isSyntaxError } from '@angular/compiler' ;
 import {
   CodeGenerator,
   CompilerHostContext,
@@ -44,7 +44,7 @@ export function main(args: any, consoleError: (s: string) => void = console.erro
   return runInternal(project, cliOptions, webpack)
     .then(() => 0)
     .catch(e => {
-      if (e instanceof UserError || e instanceof SyntaxError) {
+      if (e instanceof UserError || isSyntaxError(e)) {
         consoleError(e.message);
         return Promise.resolve(1);
       } else {

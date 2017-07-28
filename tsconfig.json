@@ -21,6 +21,7 @@
     "node_modules",
     "dist",
     "__codegen__",
-    "test/ng-app"
+    "test/ng-app",
+    "test/aot-cleanup-transformer"
   ]
 }

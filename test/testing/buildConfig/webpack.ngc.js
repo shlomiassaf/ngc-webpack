@@ -17,7 +17,7 @@ module.exports = function () {
 
     output: {
 
-      path: `dist/test/ng-app-ngc`,
+      path: path.join(process.cwd(), `dist/test/ng-app-ngc`),
 
       filename: '[name].bundle.js',
 
@@ -39,16 +39,21 @@ module.exports = function () {
         {
           test: /\.ts$/,
           use: [
-            `awesome-typescript-loader?{configFileName: "tsconfig.ngc.json"}`,
-            'angular2-template-loader',
             {
               loader: 'ng-router-loader',
               options: {
-                loader: 'async-require',
+                loader: 'async-import',
                 genDir: 'dist/test/codegen_ngc',
                 aot: true
               }
-            }
+            },
+            {
+              loader: 'awesome-typescript-loader',
+              options: {
+                configFileName: 'tsconfig.ngc.json'
+              }
+            },
+            'angular2-template-loader',
           ],
           exclude: [/\.(spec|e2e)\.ts$/]
         },

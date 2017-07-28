@@ -19,7 +19,7 @@ module.exports = function () {
 
     output: {
 
-      path: `dist/test/ng-app-plugin`,
+      path: path.join(process.cwd(), `dist/test/ng-app-plugin`),
 
       filename: '[name].bundle.js',
 
@@ -35,22 +35,32 @@ module.exports = function () {
       extensions: ['.ts', '.js'],
     },
 
+    resolveLoader: {
+      modules: ["src", "node_modules"],
+      extensions: ['.ts', '.js'],
+    },
+
     module: {
       rules: [
 
         {
           test: /\.ts$/,
           use: [
-            `awesome-typescript-loader?{configFileName: "tsconfig.plugin.json"}`,
-            'angular2-template-loader',
             {
               loader: 'ng-router-loader',
               options: {
-                loader: 'async-require',
+                loader: 'async-import',
                 genDir: 'dist/test/codegen_plugin',
                 aot: true
               }
-            }
+            },
+            {
+              loader: 'awesome-typescript-loader',
+              options: {
+                configFileName: 'tsconfig.plugin.json'
+              }
+            },
+            'angular2-template-loader'
           ],
           exclude: [/\.(spec|e2e)\.ts$/]
         },

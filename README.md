@@ -1,5 +1,10 @@
 [![Build Status](https://travis-ci.org/shlomiassaf/ngc-webpack.svg?branch=master)](https://travis-ci.org/shlomiassaf/ngc-webpack)
 
+### Version 3.1 - AOT Cleanup loader support
+Added **AOT cleanup loader** (read below)
+
+Added **AOT cleanup transformer** (Do not use)
+
 ### Version 3.0 - BREAKING CHANGE
 Version 3.0.0 does not contain API breaking changes but does contain a logical
 breaking change that might affect some setups.
@@ -40,43 +45,6 @@ customization to the process.
 
 > `ngc-webpack` is built of some constructs from `@ngtools/webpack`.
 
-## Background
-The angular compiler generate additional JS runtime files that are part of the final bundle, 
-these files reflect the `@Component` resources (html, css) as JS executable code.
-
-When compiling AOT we need to add them to the final bundle.
-> When compiling JIT these files are added to the VM on runtime, but that's not relevant for our context.
-
-The angular compiler performs static analysis on our app, thus it needs to run before **webpack** (it needs the TS files).    
-This process create 2 problems:
-
-  - The generated files are not referenced in our app (webpack won't bundle them)
-  
-  - The `Compiler` compiles resources such as HTML, CSS, SCSS...  
- In a webpack environment we expect these resources to pass through the loader chain **BEFORE** they are process by the angular `Compiler`.  
- This is the case when we develop using JIT.
-  
-`@ngtools/webpack` is the tools used by the `angular-cli`.
-
-## What does ngc-webpack do?
-`ngc-webpack` integrates with webpack to run `@Component` resources such as HTML, CSS, SCSS etc through 
-the webpack loader chain. e.g. usually you will need to do some pre/post processing to your styles...
-
-If you use `ngc-webpack` through the plugin you can also fine tune the bundling process, this can help with 
-reducing the bundle size, keep reading to get more information (resourceOverride).
-
-### Build steps
-Run the `compiler-cli` to generate files.
-Use a AOT dedicated entry point to point to that file, from there on all references are fine.
-
-This approach requires you to have 1 extra file, no big deal.
-
-The problem with this approach is the resources, `compiler-cli` runs before webpack so it gets raw files, e.g A SCSS file is passes as is.
-
-`ngc-webpack` solves this by running each of the resources through webpack using the webpack configuration file supplied.
-
-> `ngc-webpack` does not care about SCSS, LESS or any intermediate resource that requires transformation. Each resource will follow the chain defined in the webpack configuration supplied. You get identical result in but development and prod (with AOT) builds.
-
 
 ## Usage
 To install `npm install -g ngc-webpack`
@@ -97,6 +65,133 @@ ngc-w -p tsconfig.json --webpack webpack.aot.json
 
 `ngc-webpack` wraps `compiler-cli` so all cli parameters sent to `ngc` are valid here (e.g: -p for ts configuration file).  
 The only additional parameter is the `--webpack` parameter used to point to the webpack configuration factory.
+
+### AOT Cleanup loader
+
+The AOT cleanup loader is a an optional loader to be added to webpack that will remove angular decorators from the TypeScript source code.
+
+As the name suggests, the loader should run **only** when compiling AOT, if you run it when the target is JIT the application will fail to run.
+
+The **AOT cleanup loader** removes all angular decorators (e.g.  `NgModel`, `Component`, `Inject` etc...) from TypeScript code before the main TS loader kicks in (`ts-loader`, `awesome-typescript-loader`, etc...).
+The decorators are not needed in AOT mode since the AOT compiler converts the metadata in them into code and saves it in `ngfactory.ts` files.
+
+It is always recommended to run the **AOT cleanup loader** for AOT production build as it will:
+
+  1. Reduces the bundle size
+  2. Speeds up initial bootstrap time and any future `NgModule` lazy loading
+
+The impact volume depends on the application size.
+Bigger application = more decorators = more effect.
+
+> Speed up in initial bootstrap is not significant and unnoticeable in most cases.
+
+#### Loader options:
+```ts
+export interface AotCleanupLoaderOptions {
+  /**
+   * If false the plugin is a ghost, it will not perform any action.
+   * This property can be used to trigger AOT on/off depending on your build target (prod, staging etc...)
+   *
+   * The state can not change after initializing the plugin.
+   * @default true
+   */
+  disable?: false;
+
+  /**
+   * A path to a TSConfig file, optional if a plugin is supplied.
+   * When both are available `tsConfigPath` wins.
+   */
+  tsConfigPath?: any;
+
+  /**
+   * Optional TS compiler options.
+   *
+   * > Some options set by the loader can not change.
+   */
+  compilerOptions?: any;
+}
+```
+
+#### Loader VS TypeScript transformers
+The **AOT cleanup loader** is a temporary solution to solve the cleanup problem. It is not the optimal one.
+
+The optimal solution is to use the `Transformers API` in **TypeScript**.
+The API is not complete nor stable which is why the loader approach is used.
+**ngc-webpack** library has a transformer implementation ready and exposed but not documented yet since it will fail on certain use cases due to bugs in the transformers API.
+
+#### Webpack config example:
+```
+{
+  test: /\.ts$/,
+  use: [
+    {
+      loader: 'awesome-typescript-loader',
+      options: {
+        configFileName: 'tsconfig.webpack.json',
+      }
+    },
+    {
+      loader: 'ngc-webpack',
+      options: {
+        disable: false,                   // SET TO TRUE ON NON AOT PROD BUILDS
+      }
+    },
+    {
+      loader: 'angular2-template-loader'
+    }
+  ]
+}
+
+// This setup assumes NgcWebpackPlugin is set in the plugins array.
+```
+
+#### Real time loader analysis
+
+The following table displays an analysis of the bundling process with
+and without the loader. The source is an Angular application (v 4.3.1)
+with a total **177** angular decorators spread across 140,527 TypeScript lines
+of code (42,796 net total of actual source LOC).
+
+This a small to medium size application.
+
+> Note that 177 decorators means a combination of all angular decorators, some emit more boilerplate then others (e.g. `@Component` vs `@Injectable`)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Non Minified**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Minified (UglifyJS)**
+
+|                | Webpack compile time (sec) | Final Bundle Size (kb) |   | Webpack compile time (sec) | Final Bundle Size (kb) |
+|----------------|:--------------------------:|:----------------------:|:-:|:--------------------------:|:----------------------:|
+|   With Loader  |                        115 |                   1721 |   |                        138 |                    467 |
+| Without Loader |                        118 |                   1848 |   |                        143 |                    491 |
+|      Diff      |                          **3** |                    **127** |   |                          **5** |                     **24** |
+
+
+##### Bundle Size
+The bundle size is also reduces, around 7% for non minified and 5% for minified.
+This is substantial and will increase over time.
+
+
+> Initial bootstrap improvement was not measured, I don't think it is
+noticeable.
+
+
+##### Time
+Time is not that interesting as bundle size since it's not effecting the
+user but the results surprised me so I dag in.
+
+We can see a small decrease of webpack runtime.
+While we add an extra loader that does TS processing we reduce the
+payload for following loaders and plugins. Decorators emit boilerplate
+that they won't need to process.
+The additional processing we add is less then we remove. It get stronger
+When using UglifyJS, again, it has less data to minify.
+
+
+##### Memory footprint (webpack)
+The loader use's it's own TS compilation process, this is an additional
+process that consumes memory. The compilation example ran with
+`--max_old_space_size=4096`.
+
+> Using `resourceOverride` plugin option has no effect when using the loader.
 
 ### Plugin
 `ngc-webpack` comes with an optional plugin called `NgcWebpackPlugin`  
@@ -208,8 +303,44 @@ export interface NgcWebpackPluginOptions {
 }
 ```
 
+## Background
+The angular compiler generate additional JS runtime files that are part of the final bundle,
+these files reflect the `@Component` resources (html, css) as JS executable code.
 
-## Why?  
+When compiling AOT we need to add them to the final bundle.
+> When compiling JIT these files are added to the VM on runtime, but that's not relevant for our context.
+
+The angular compiler performs static analysis on our app, thus it needs to run before **webpack** (it needs the TS files).
+This process create 2 problems:
+
+  - The generated files are not referenced in our app (webpack won't bundle them)
+
+  - The `Compiler` compiles resources such as HTML, CSS, SCSS...
+ In a webpack environment we expect these resources to pass through the loader chain **BEFORE** they are process by the angular `Compiler`.
+ This is the case when we develop using JIT.
+
+`@ngtools/webpack` is the tools used by the `angular-cli`.
+
+## What does ngc-webpack do?
+`ngc-webpack` integrates with webpack to run `@Component` resources such as HTML, CSS, SCSS etc through
+the webpack loader chain. e.g. usually you will need to do some pre/post processing to your styles...
+
+If you use `ngc-webpack` through the plugin you can also fine tune the bundling process, this can help with
+reducing the bundle size, keep reading to get more information (resourceOverride).
+
+### Build steps
+Run the `compiler-cli` to generate files.
+Use a AOT dedicated entry point to point to that file, from there on all references are fine.
+
+This approach requires you to have 1 extra file, no big deal.
+
+The problem with this approach is the resources, `compiler-cli` runs before webpack so it gets raw files, e.g A SCSS file is passes as is.
+
+`ngc-webpack` solves this by running each of the resources through webpack using the webpack configuration file supplied.
+
+> `ngc-webpack` does not care about SCSS, LESS or any intermediate resource that requires transformation. Each resource will follow the chain defined in the webpack configuration supplied. You get identical result in but development and prod (with AOT) builds.
+
+## Why?
 Initially, `ngc-webpack` was built to cover the gap between "vanilla" webpack driven angular applications 
 and `angular-cli` application. There was no tool to handle that and production builds for angular application 
 was impossible unless using the cli. `ngc-webpack` covered that gap.

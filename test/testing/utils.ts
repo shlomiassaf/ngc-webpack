@@ -20,6 +20,10 @@ export const configs = {
   plugin: {
     ts: Path.resolve('tsconfig.plugin.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.plugin.js')
+  },
+  aotTransform: {
+    ts: Path.resolve('tsconfig.aot-transformer.json'),
+    wp: Path.resolve('test/testing/buildConfig/webpack.aot-transformer.js')
   }
 };
 
