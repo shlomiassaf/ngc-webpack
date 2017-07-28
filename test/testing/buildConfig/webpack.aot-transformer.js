@@ -18,7 +18,7 @@ module.exports = { /* ... */
             }
           },
           {
-            loader: path.join(process.cwd(), `test/testing/aot-cleanup-test-utils.ts`)
+            loader: path.join(process.cwd(), `dist/test/testing/aot-cleanup-test-utils`)
           }
         ]
 

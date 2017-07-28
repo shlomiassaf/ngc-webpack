@@ -8,7 +8,7 @@ import { expect } from 'chai';
 import * as aotCleanupTestUtils from './testing/aot-cleanup-test-utils';
 import { runWebpack, resolveWebpackConfig, getTsConfigMeta, configs } from './testing/utils';
 
-const srcFileDir = Path.join(__dirname, 'aot-cleanup-transformer');
+const srcFileDir = Path.join(process.cwd(), 'test', 'aot-cleanup-transformer');
 const ngToolsCompiled: any = {};
 const selfCompiled: any = {};
 
@@ -23,7 +23,7 @@ aotCleanupTestUtils.onNgToolsLoaderHit.subscribe( result => {
   }
 });
 
-describe('AOT Cleanup transformer', async () => {
+describe('AOT Cleanup loader', async () => {
   const tsMetaAotTransform = getTsConfigMeta(configs.aotTransform.ts);
 
 
@@ -49,11 +49,7 @@ describe('AOT Cleanup transformer', async () => {
       .then( () => {
         aotCleanupTestUtils.setWrappedLoader('self');
         return runWebpack( Object.assign({}, wpConfig, { plugins: [] }) ).done;
-      })
-      .catch( err => {
-        expect(err).to.be.undefined;
-        throw err;
-      } );
+      });
   });
   (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 

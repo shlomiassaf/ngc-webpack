@@ -62,9 +62,33 @@ describe('AOT Cleanup transformer', async () => {
 
       // TODO: This is to handle a bug in ngTools where a non-angular parameter decorator
       //        results in two identical ctorParameters functions, one after the other.
-      const bugIdx = ngToolsSource.indexOf('    MyServiceService.ctorParameters = function () { return [{ type: undefined, decorators: [] }]; };');
-      if (bugIdx > -1 && ngToolsSource[bugIdx] === ngToolsSource[bugIdx + 1]) {
-        ngToolsSource.splice(bugIdx, 1);
+      if (key === 'service.ts') {
+        for (let i=0; i<ngToolsSource.length; i++) {
+          if (ngToolsSource[i].startsWith('    MyServiceService.ctorParameters = function ()')) {
+            // handle same bug as the one in component.ts
+            ngToolsSource[i] = ngToolsSource[i].replace('MyType', 'Object');
+
+            i++;
+            while (i<ngToolsSource.length) {
+              if (ngToolsSource[i].startsWith('    MyServiceService.ctorParameters = function ()')) {
+                ngToolsSource.splice(i, 1);
+              } else {
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      // TODO: This is to handle a bug in ngTools where a interfaces and types are treated as values.
+      else if (key === 'component.ts') {
+        for (let i=0; i<ngToolsSource.length; i++) {
+          if (ngToolsSource[i].startsWith('    MyComponentComponent.ctorParameters = function ()')) {
+            ngToolsSource[i] = ngToolsSource[i].replace('MyInterface', 'Object');
+            break;
+          }
+        }
       }
 
       expect(ngToolsSource.join('\n')).to.equal(result.outputText);
