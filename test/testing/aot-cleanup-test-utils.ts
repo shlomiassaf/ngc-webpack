@@ -93,7 +93,10 @@ export function ngToolsLoaderWrapper(this: l.LoaderContext & { _compilation: any
   };
 
   if (hijackedLoader === 'self') {
-    Object.defineProperty(wrappedThis, 'query', { value: { tsConfigPath: './tsconfig.aot-transformer.json' } });
+    Object.defineProperty(wrappedThis, 'query', { value: {
+      disable: false,
+      tsConfigPath: './tsconfig.aot-transformer.json'
+    } });
   }
 
   const result = hijackedLoader === 'self'

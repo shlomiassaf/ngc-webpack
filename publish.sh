@@ -2,7 +2,7 @@
 
 rm -rf ./dist
 
-tsc --project tsconfig.json 2> /dev/null
+npm run build 2> /dev/null
 
 if [ $? -eq 0 ]
 then
