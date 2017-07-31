@@ -31,7 +31,6 @@
     "test/ng-app/main.browser.aot.cli.ts"
   ],
   "awesomeTypescriptLoaderOptions": {
-    "forkChecker": true,
     "useWebpackText": true
   },
   "angularCompilerOptions": {

@@ -1,5 +1,4 @@
 import * as ts from 'typescript';
-import * as tsMock from './ts-mock';
 
 export class WalkerContext {
 }
@@ -66,7 +65,7 @@ export class BaseTransformWalker<T extends WalkerContext = WalkerContext> {
   protected filterNodes<T extends ts.Node>(nodes: ts.NodeArray<T>, test?: (node: T) => boolean): ts.NodeArray<T> | undefined {
     return nodes
       ? ts.createNodeArray(nodes.filter( n => test(n) ))
-      : undefined
+      : ts.createNodeArray()
     ;
   }
 

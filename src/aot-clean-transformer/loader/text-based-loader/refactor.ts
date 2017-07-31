@@ -43,7 +43,7 @@ export class TypeScriptFileRefactor {
     this._fileName = fileName = resolve(fileName, compilerOptions).replace(/\\/g, '/');
 
     if (program) {
-        this._sourceFile = program.getSourceFile(fileName);
+      this._sourceFile = program.getSourceFile(fileName);
     }
 
     // if (!this._sourceFile) {

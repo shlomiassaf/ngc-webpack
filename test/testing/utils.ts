@@ -3,8 +3,8 @@ import { spawn as spawnFactory } from 'child_process';
 import * as fs from 'fs';
 import * as Path from 'path';
 
-export type Compiler = webpack.compiler.Compiler;
-export type Stats = webpack.compiler.Stats;
+export type Compiler = webpack.Compiler;
+export type Stats = webpack.Stats;
 
 process.env.NODE_ENV = 'production';
 
@@ -101,4 +101,49 @@ export function occurrences(regex: RegExp, str: string): number {
   }
 
   return count;
+}
+
+export function logWebpackStats(stats: Stats) {
+  console.log('Total Memory:');
+  const memUse = process.memoryUsage();
+  ['rss', 'heapTotal', 'heapUsed', 'external'].forEach( k => memUse[k] = pretty(memUse[k]));
+
+  console.log(JSON.stringify(memUse, null, 2));
+  console.log(`${stats['endTime'] - stats['startTime']} ms [${Math.ceil((stats['endTime'] - stats['startTime']) / 1000)} secs]`);
+
+  stats.toJson().assets.forEach( a => {
+    console.log(`${a.name}: ${pretty(a.size)}`)
+  })
+}
+
+//https://github.com/davglass/prettysize/blob/master/index.js
+function pretty (size, nospace?, one?, places?) {
+  const sizes = [ 'Bytes', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB' ];
+
+  let mysize, f;
+  places = places || 1;
+
+  sizes.forEach(function(f, id) {
+    if (one) {
+      f = f.slice(0, 1);
+    }
+    var s = Math.pow(1024, id),
+      fixed;
+    if (size >= s) {
+      fixed = String((size / s).toFixed(places));
+      if (fixed.indexOf('.0') === fixed.length - 2) {
+        fixed = fixed.slice(0, -2);
+      }
+      mysize = fixed + (nospace ? '' : ' ') + f;
+    }
+  });
+
+  // zero handling
+  // always prints in Bytes
+  if (!mysize) {
+    f = (one ? sizes[0].slice(0, 1) : sizes[0]);
+    mysize = '0' + (nospace ? '' : ' ') + f;
+  }
+
+  return mysize;
 }

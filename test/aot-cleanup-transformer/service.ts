@@ -1,5 +1,5 @@
 import 'rxjs/add/operator/do';
-import { Injectable, InjectionToken } from '@angular/core';
+import { Injectable, InjectionToken, OnDestroy } from '@angular/core';
 
 export function NonAngularClassDecorator(value1: string, value2: number) {
   return target => {
@@ -21,7 +21,10 @@ export type MyType = Injectable;
 @NonAngularClassDecorator('test', 12)
 export class MyServiceService {
 
-  constructor(@NonAngulaParam('test1', 99) public testParam, public myType: MyType, public crazy: 'someValue' | true | MyType) {
+  constructor(@NonAngulaParam('test1', 99) public testParam,
+              public myType: MyType,
+              public crazy: 'someValue' | true | MyType,
+              public iface: OnDestroy) {
 
   }
 

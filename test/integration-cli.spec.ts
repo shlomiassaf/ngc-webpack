@@ -6,7 +6,7 @@ import { expect } from 'chai';
 const rimraf = require('rimraf');
 const mapper = require('node-map-directory');
 
-import { spawn, runWebpack, resolveWebpackConfig, getTsConfigMeta, configs, occurrences } from './testing/utils';
+import { spawn, runWebpack, resolveWebpackConfig, getTsConfigMeta, configs, occurrences, logWebpackStats } from './testing/utils';
 
 describe('Integration', () => {
   const tsMetaNgcW = getTsConfigMeta(configs.cli.ts);
@@ -31,7 +31,8 @@ describe('Integration', () => {
       const wpConfig = resolveWebpackConfig(require(configs.cli.wp));
 
       return runWebpack(wpConfig).done
-        .then( () => {
+        .then( (stats) => {
+          logWebpackStats(stats);
           expect(fs.existsSync('dist/test/ng-app-cli'));
           bundleCode = fs.readFileSync(Path.resolve('dist/test/ng-app-cli/main.bundle.js'), 'utf8');
         })
@@ -80,10 +81,11 @@ describe('Integration', () => {
 
     let test = it('should compile using webpack plugin', () => {
 
-      const wpConfig = resolveWebpackConfig(require(configs.plugin.wp));
+      const wpConfig = resolveWebpackConfig(require(configs.plugin.wp)());
 
       return runWebpack(wpConfig).done
-        .then( () => {
+        .then( (stats) => {
+          logWebpackStats(stats);
           expect(fs.existsSync(tsMetaPlugin.absGenDir));
           bundleCode = fs.readFileSync(Path.resolve('dist/test/ng-app-plugin/main.bundle.js'), 'utf8');
         })
@@ -126,6 +128,38 @@ describe('Integration', () => {
         expect(!!match).to.be.true;
       });
     });
+
+    test = it('should compile using webpack plugin with aot cleanup LOADER (default, text based)', () => {
+
+      const wpConfig = resolveWebpackConfig(require(configs.plugin.wp)('loader'));
+
+      return runWebpack(wpConfig).done
+        .then( (stats) => {
+          logWebpackStats(stats);
+          expect(fs.existsSync(tsMetaPlugin.absGenDir));
+          const bCode = fs.readFileSync(Path.resolve('dist/test/ng-app-plugin/main.bundle.js'), 'utf8');
+          expect(bCode.length).lt(bundleCode.length);
+        })
+        .catch( err => expect(err).to.be.undefined );
+    });
+    (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
+
+
+    test = it('should compile using webpack plugin with aot cleanup TRANSFORMER', () => {
+
+      const wpConfig = resolveWebpackConfig(require(configs.plugin.wp)('transformer'));
+
+      return runWebpack(wpConfig).done
+        .then( (stats) => {
+          logWebpackStats(stats);
+          expect(fs.existsSync(tsMetaPlugin.absGenDir));
+          const bCode = fs.readFileSync(Path.resolve('dist/test/ng-app-plugin/main.bundle.js'), 'utf8');
+          expect(bCode.length).lt(bundleCode.length);
+        })
+        .catch( err => expect(err).to.be.undefined );
+    });
+    (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
+
   });
 
   describe('ngc CLI (control test)', () => {
@@ -146,7 +180,8 @@ describe('Integration', () => {
       const wpConfig = resolveWebpackConfig(require(configs.ngc.wp));
 
       return runWebpack(wpConfig).done
-        .then( () => {
+        .then( (stats) => {
+          logWebpackStats(stats);
           expect(fs.existsSync('dist/test/ng-app-ngc'));
         })
         .catch( err => expect(err).to.be.undefined );

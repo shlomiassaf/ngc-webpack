@@ -50,7 +50,7 @@
     "@angular/platform-browser": "^4.3.1",
     "@angular/platform-browser-dynamic": "^4.3.1",
     "@angular/router": "^4.3.1",
-    "@ngtools/webpack": "^1.5.2",
+    "@ngtools/webpack": "1.6.0-rc.3",
     "@types/chai": "^3.4.34",
     "@types/jest": "^20.0.4",
     "@types/mocha": "^2.2.37",

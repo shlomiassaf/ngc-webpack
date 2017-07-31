@@ -8,7 +8,49 @@ const LoaderOptionsPlugin = require('webpack/lib/LoaderOptionsPlugin');
 
 const ngcWebpack = require('../../../dist/index');
 
-module.exports = function () {
+/**
+ *
+ * @param aotCleanup loader or transformer
+ */
+module.exports = function (aotCleanup) {
+
+  const tsRule = {
+    test: /\.ts$/,
+    use: [
+      {
+        loader: 'ng-router-loader',
+        options: {
+          loader: 'async-import',
+          genDir: 'dist/test/codegen_plugin',
+          aot: true
+        }
+      },
+      {
+        loader: 'awesome-typescript-loader',
+        options: {
+          configFileName: 'tsconfig.plugin.json'
+        }
+      },
+      'angular2-template-loader'
+    ],
+    exclude: [/\.(spec|e2e)\.ts$/]
+  };
+
+  if (aotCleanup === 'loader') {
+    const templateLoader = tsRule.use.pop();
+    tsRule.use.push({
+      loader: path.join(process.cwd(), `dist/index.js`),
+      options: {
+        disable: false
+      }
+    });
+    tsRule.use.push(templateLoader);
+  } else if (aotCleanup === 'transformer') {
+    tsRule.use[1].options.getCustomTransformers = () => ({
+      before: [ ngcWebpack.aotCleanupTransformer ],
+      after: []
+    });
+  }
 
   return {
     devtool: 'cheap-module-source-map',
@@ -42,29 +84,7 @@ module.exports = function () {
 
     module: {
       rules: [
-
-        {
-          test: /\.ts$/,
-          use: [
-            {
-              loader: 'ng-router-loader',
-              options: {
-                loader: 'async-import',
-                genDir: 'dist/test/codegen_plugin',
-                aot: true
-              }
-            },
-            {
-              loader: 'awesome-typescript-loader',
-              options: {
-                configFileName: 'tsconfig.plugin.json'
-              }
-            },
-            'angular2-template-loader'
-          ],
-          exclude: [/\.(spec|e2e)\.ts$/]
-        },
-
+        tsRule,
         {
           test: /\.html$/,
           use: 'raw-loader'

@@ -64,13 +64,12 @@
   dependencies:
     tsickle "^0.21.0"
 
-"@ngtools/webpack@^1.5.2":
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/@ngtools/webpack/-/webpack-1.5.2.tgz#fadef06ba6a9ac0daaf891d013dad031d6bf0c26"
+"@ngtools/webpack@1.6.0-rc.3":
+  version "1.6.0-rc.3"
+  resolved "https://registry.yarnpkg.com/@ngtools/webpack/-/webpack-1.6.0-rc.3.tgz#1cc0885c5075f66ac322e68eaf256bff172dd134"
   dependencies:
-    enhanced-resolve "^3.1.0"
     loader-utils "^1.0.2"
-    magic-string "^0.19.0"
+    magic-string "^0.22.3"
     source-map "^0.5.6"
 
 "@types/babel-core@^6.7.14":
@@ -2719,12 +2718,6 @@ lru-cache@^4.0.1:
 macaddress@^0.2.8:
   version "0.2.8"
   resolved "https://registry.yarnpkg.com/macaddress/-/macaddress-0.2.8.tgz#5904dc537c39ec6dbefeae902327135fa8511f12"
-
-magic-string@^0.19.0:
-  version "0.19.1"
-  resolved "https://registry.yarnpkg.com/magic-string/-/magic-string-0.19.1.tgz#14d768013caf2ec8fdea16a49af82fc377e75201"
-  dependencies:
-    vlq "^0.2.1"
 
 magic-string@^0.22.3:
   version "0.22.3"
