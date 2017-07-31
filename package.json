@@ -29,6 +29,7 @@
     "ngc-w": "./src/main.js"
   },
   "dependencies": {
+    "loader-utils": "^1.1.0",
     "magic-string": "^0.22.3",
     "minimist": "^1.2.0",
     "reflect-metadata": "^0.1.10",
