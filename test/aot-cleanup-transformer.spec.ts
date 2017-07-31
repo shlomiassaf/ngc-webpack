@@ -5,7 +5,7 @@ import * as ts from 'typescript';
 import { expect } from 'chai';
 
 
-import { tsConfig, compile, onNgToolsLoaderHit } from './testing/aot-cleanup-test-utils';
+import { tsConfig, compile, onNgToolsLoaderHit, setWrappedLoader } from './testing/aot-cleanup-test-utils';
 import { runWebpack, resolveWebpackConfig, getTsConfigMeta, configs } from './testing/utils';
 
 const srcFileDir = Path.join(process.cwd(), 'test', 'aot-cleanup-transformer');
@@ -18,12 +18,12 @@ onNgToolsLoaderHit.subscribe( result => {
   }
 });
 
-describe('AOT Cleanup transformer', async () => {
+xdescribe('AOT Cleanup transformer', async () => {
   const tsMetaAotTransform = getTsConfigMeta(configs.aotTransform.ts);
 
 
   let test = it('should compile using @ngtoools/webpack', () => {
-
+    setWrappedLoader('ngtools');
     const wpConfig = resolveWebpackConfig(require(configs.aotTransform.wp));
 
     return runWebpack(wpConfig).done
