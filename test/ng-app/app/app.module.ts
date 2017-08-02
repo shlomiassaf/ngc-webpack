@@ -4,6 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 import { RouterModule, PreloadAllModules } from '@angular/router';
 
+import '../styles/main.scss';
+import '../styles/additional.css';
+
 /*
  * Platform and Environment providers/directives/pipes
  */

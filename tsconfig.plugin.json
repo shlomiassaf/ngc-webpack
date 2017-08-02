@@ -28,7 +28,8 @@
     "test/testing",
     "test/*.spec.ts",
     "test/ng-app/main.browser.aot.ngc.ts",
-    "test/ng-app/main.browser.aot.cli.ts"
+    "test/ng-app/main.browser.aot.cli.ts",
+    "test/ng-app/main.browser.aot.plugin-full.ts"
   ],
   "awesomeTypescriptLoaderOptions": {
     "useWebpackText": true

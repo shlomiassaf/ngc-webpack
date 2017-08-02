@@ -24,16 +24,14 @@ describe('AOT Cleanup transformer', async () => {
   const tsMetaAotTransform = getTsConfigMeta(configs.aotTransform.ts);
 
 
-  let test = it('should compile using @ngtoools/webpack', () => {
+  let test = it('should compile using @ngtoools/webpack', async () => {
     setWrappedLoader(ngcLoader);
     const wpConfig = resolveWebpackConfig(require(configs.aotTransform.wp));
-
-    return runWebpack(wpConfig).done
-      .then( (stats) => {
-        logWebpackStats(stats);
-        expect(fs.existsSync(tsMetaAotTransform.absGenDir));
-        const bundleCode = fs.readFileSync(Path.resolve('dist/test/aot-transformer/main.bundle.js'), 'utf8');
-        const appModuleCode = `var AppModule = (function () {
+    const stats = await runWebpack(wpConfig).done;
+    logWebpackStats(stats);
+    expect(fs.existsSync(tsMetaAotTransform.absGenDir));
+    const bundleCode = fs.readFileSync(Path.resolve('dist/test/aot-transformer/main.bundle.js'), 'utf8');
+    const appModuleCode = `var AppModule = (function () {
     function AppModule(myService, token) {
         this.myService = myService;
         this.token = token;
@@ -43,9 +41,7 @@ describe('AOT Cleanup transformer', async () => {
     AppModule.ctorParameters = function () { return [{ type: __WEBPACK_IMPORTED_MODULE_4__service__["a" /* MyServiceService */] }, { type: __WEBPACK_IMPORTED_MODULE_3__pipe__["a" /* MyPipePipe */], decorators: [{ type: __WEBPACK_IMPORTED_MODULE_0__angular_core__["a" /* Inject */], args: [__WEBPACK_IMPORTED_MODULE_4__service__["b" /* MyTokenToken */]] }] }]; };
     return AppModule;
 }());`;
-        expect(bundleCode).to.contain(appModuleCode);
-      })
-      .catch( err => expect(err).to.be.undefined );
+    expect(bundleCode).to.contain(appModuleCode);
   });
   (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 

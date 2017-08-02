@@ -1,3 +1,4 @@
+const Table = require('cli-table');
 import * as webpack from 'webpack';
 import { spawn as spawnFactory } from 'child_process';
 import * as fs from 'fs';
@@ -20,6 +21,14 @@ export const configs = {
   plugin: {
     ts: Path.resolve('tsconfig.plugin.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.plugin.js')
+  },
+  pluginFull: {
+    ts: Path.resolve('tsconfig.plugin-full.json'),
+    wp: Path.resolve('test/testing/buildConfig/webpack.plugin-full.js')
+  },
+  ngToolsFull: {
+    ts: Path.resolve('tsconfig.ngtools-full.json'),
+    wp: Path.resolve('test/testing/buildConfig/webpack.ngtools-full.js')
   },
   aotTransform: {
     ts: Path.resolve('tsconfig.aot-transformer.json'),
@@ -104,20 +113,25 @@ export function occurrences(regex: RegExp, str: string): number {
 }
 
 export function logWebpackStats(stats: Stats) {
-  console.log('Total Memory:');
+  let table = new Table({ head: ['', 'Total Memory'] });
+
+
   const memUse = process.memoryUsage();
-  ['rss', 'heapTotal', 'heapUsed', 'external'].forEach( k => memUse[k] = pretty(memUse[k]));
+  ['rss', 'heapTotal', 'heapUsed', 'external'].forEach( k => table.push([k , pretty(memUse[k])]) );
+  console.log(table.toString());
 
-  console.log(JSON.stringify(memUse, null, 2));
-  console.log(`${stats['endTime'] - stats['startTime']} ms [${Math.ceil((stats['endTime'] - stats['startTime']) / 1000)} secs]`);
+  console.log(`
+  Total Time: ${stats['endTime'] - stats['startTime']} ms [${Math.ceil((stats['endTime'] - stats['startTime']) / 1000)} secs]
+  `);
 
-  stats.toJson().assets.forEach( a => {
-    console.log(`${a.name}: ${pretty(a.size)}`)
-  })
+  table = new Table({ head: ['Asset', 'Size'] });
+  stats.toJson().assets.forEach( a => table.push([a.name , pretty(a.size)]) );
+  console.log(table.toString());
+
 }
 
 //https://github.com/davglass/prettysize/blob/master/index.js
-function pretty (size, nospace?, one?, places?) {
+export function pretty (size, nospace?, one?, places?) {
   const sizes = [ 'Bytes', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB' ];
 
   let mysize, f;

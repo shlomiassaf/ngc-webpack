@@ -29,8 +29,8 @@ import { Component, ViewEncapsulation } from '@angular/core';
       </span>
       |
       <span>
-        <a [routerLink]=" ['./detail'] ">
-          Detail
+        <a [routerLink]=" ['./lazy'] ">
+          Lazy
         </a>
       </span>
       |

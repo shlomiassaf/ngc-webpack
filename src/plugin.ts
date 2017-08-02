@@ -39,7 +39,7 @@ export class NgcWebpackPlugin {
   }
 
   emit(compilation: any, next: (err?: Error) => any): void {
-    if (!!this.options.resourceOverride && this.webpackWrapper.externalAssetsSource) {
+    if (this.webpackWrapper.externalAssetsSource) {
       const externalAssets = this.webpackWrapper.externalAssetsSource.externalAssets || {};
       Object.keys(externalAssets).forEach( k => compilation.assets[k] = externalAssets[k] );
     }

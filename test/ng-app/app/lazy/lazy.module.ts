@@ -21,6 +21,6 @@ export const routes = [
     RouterModule.forChild(routes),
   ]
 })
-export class DetailModule {
+export class LazyModule {
   static routes = routes;
 }

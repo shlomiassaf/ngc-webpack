@@ -6,7 +6,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "noEmit": true,
     "noEmitHelpers": true,
     "strictNullChecks": false,
@@ -27,16 +27,15 @@
     "src",
     "test/testing",
     "test/*.spec.ts",
+    "test/ng-app/main.browser.aot.ngc.ts",
     "test/ng-app/main.browser.aot.cli.ts",
-    "test/ng-app/main.browser.aot.plugin.ts",
-    "test/ng-app/main.browser.aot.plugin-full.ts"
+    "test/ng-app/main.browser.aot.plugin.ts"
   ],
   "awesomeTypescriptLoaderOptions": {
-    "forkChecker": true,
     "useWebpackText": true
   },
   "angularCompilerOptions": {
-    "genDir": "dist/test/codegen_ngc"
+    "genDir": "dist/test/codegen_plugin-full"
   },
   "compileOnSave": false,
   "buildOnSave": false,

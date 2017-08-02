@@ -17,26 +17,20 @@ describe('Integration', () => {
     let bundleCode: string;
     rimraf.sync(tsMetaNgcW.absGenDir);
 
-    let test = it('should compile using ngc-webapck', () => {
-      return spawn(`node dist/src/main.js -p ${configs.cli.ts} --webpack ${configs.cli.wp}`)
-        .then( () => {
-          expect(fs.existsSync(tsMetaNgcW.absGenDir));
-        })
-        .catch( err => expect(err).to.be.undefined );
+    let test = it('should compile using ngc-webapck', async () => {
+      await spawn(`node dist/src/main.js -p ${configs.cli.ts} --webpack ${configs.cli.wp}`);
+      expect(fs.existsSync(tsMetaNgcW.absGenDir));
     });
     (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 
-    test = it('should bundle using webpack', () => {
+    test = it('should bundle using webpack', async () => {
 
       const wpConfig = resolveWebpackConfig(require(configs.cli.wp));
 
-      return runWebpack(wpConfig).done
-        .then( (stats) => {
-          logWebpackStats(stats);
-          expect(fs.existsSync('dist/test/ng-app-cli'));
-          bundleCode = fs.readFileSync(Path.resolve('dist/test/ng-app-cli/main.bundle.js'), 'utf8');
-        })
-        .catch( err => expect(err).to.be.undefined );
+      const stats = await runWebpack(wpConfig).done;
+      logWebpackStats(stats);
+      expect(fs.existsSync('dist/test/ng-app-cli'));
+      bundleCode = fs.readFileSync(Path.resolve('dist/test/ng-app-cli/main.bundle.js'), 'utf8');
     });
     (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 
@@ -165,26 +159,17 @@ describe('Integration', () => {
   describe('ngc CLI (control test)', () => {
     rimraf.sync(tsMetaNgc.absGenDir);
 
-    let test = it('should compile using ngc', () => {
-
-      return spawn(`./node_modules/.bin/ngc -p ${configs.ngc.ts}`)
-        .then( () => {
-          expect(fs.existsSync(tsMetaNgc.absGenDir));
-        })
-        .catch( err => expect(err).to.be.undefined );
+    let test = it('should compile using ngc', async () => {
+      await spawn(`./node_modules/.bin/ngc -p ${configs.ngc.ts}`);
+      expect(fs.existsSync(tsMetaNgc.absGenDir));
     });
     (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 
-    test = it('should bundle using webpack', () => {
-
+    test = it('should bundle using webpack', async () => {
       const wpConfig = resolveWebpackConfig(require(configs.ngc.wp));
-
-      return runWebpack(wpConfig).done
-        .then( (stats) => {
-          logWebpackStats(stats);
-          expect(fs.existsSync('dist/test/ng-app-ngc'));
-        })
-        .catch( err => expect(err).to.be.undefined );
+      const stats = await runWebpack(wpConfig).done;
+      logWebpackStats(stats);
+      expect(fs.existsSync('dist/test/ng-app-ngc'));
     });
     (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 

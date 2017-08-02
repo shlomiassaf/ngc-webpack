@@ -8,6 +8,6 @@ export const ROUTES: Routes = [
   { path: '',      component: HomeComponent },
   { path: 'home',  component: HomeComponent },
   { path: 'about', component: AboutComponent },
-  { path: 'detail', loadChildren: './+detail#DetailModule'},
+  { path: 'lazy', loadChildren: './lazy/lazy.module#LazyModule'},
   { path: '**',    component: NoContentComponent },
 ];
