@@ -1,10 +1,11 @@
+const Table = require('cli-table');
 import * as webpack from 'webpack';
 import { spawn as spawnFactory } from 'child_process';
 import * as fs from 'fs';
 import * as Path from 'path';
 
-export type Compiler = webpack.compiler.Compiler;
-export type Stats = webpack.compiler.Stats;
+export type Compiler = webpack.Compiler;
+export type Stats = webpack.Stats;
 
 process.env.NODE_ENV = 'production';
 
@@ -20,6 +21,14 @@ export const configs = {
   plugin: {
     ts: Path.resolve('tsconfig.plugin.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.plugin.js')
+  },
+  pluginFull: {
+    ts: Path.resolve('tsconfig.plugin-full.json'),
+    wp: Path.resolve('test/testing/buildConfig/webpack.plugin-full.js')
+  },
+  ngToolsFull: {
+    ts: Path.resolve('tsconfig.ngtools-full.json'),
+    wp: Path.resolve('test/testing/buildConfig/webpack.ngtools-full.js')
   },
   aotTransform: {
     ts: Path.resolve('tsconfig.aot-transformer.json'),
@@ -101,4 +110,54 @@ export function occurrences(regex: RegExp, str: string): number {
   }
 
   return count;
+}
+
+export function logWebpackStats(stats: Stats) {
+  let table = new Table({ head: ['', 'Total Memory'] });
+
+
+  const memUse = process.memoryUsage();
+  ['rss', 'heapTotal', 'heapUsed', 'external'].forEach( k => table.push([k , pretty(memUse[k])]) );
+  console.log(table.toString());
+
+  console.log(`
+  Total Time: ${stats['endTime'] - stats['startTime']} ms [${Math.ceil((stats['endTime'] - stats['startTime']) / 1000)} secs]
+  `);
+
+  table = new Table({ head: ['Asset', 'Size'] });
+  stats.toJson().assets.forEach( a => table.push([a.name , pretty(a.size)]) );
+  console.log(table.toString());
+
+}
+
+//https://github.com/davglass/prettysize/blob/master/index.js
+export function pretty (size, nospace?, one?, places?) {
+  const sizes = [ 'Bytes', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB' ];
+
+  let mysize, f;
+  places = places || 1;
+
+  sizes.forEach(function(f, id) {
+    if (one) {
+      f = f.slice(0, 1);
+    }
+    var s = Math.pow(1024, id),
+      fixed;
+    if (size >= s) {
+      fixed = String((size / s).toFixed(places));
+      if (fixed.indexOf('.0') === fixed.length - 2) {
+        fixed = fixed.slice(0, -2);
+      }
+      mysize = fixed + (nospace ? '' : ' ') + f;
+    }
+  });
+
+  // zero handling
+  // always prints in Bytes
+  if (!mysize) {
+    f = (one ? sizes[0].slice(0, 1) : sizes[0]);
+    mysize = '0' + (nospace ? '' : ' ') + f;
+  }
+
+  return mysize;
 }

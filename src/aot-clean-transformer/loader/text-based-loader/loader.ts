@@ -4,7 +4,7 @@ import { loader as l } from 'webpack';
 const loaderUtils = require('loader-utils');
 
 import { TypeScriptFileRefactor } from './refactor';
-import { findPlugin } from '../../webpack-wrapper';
+import { findPlugin } from '../../../webpack-wrapper';
 
 function _angularImportsFromNode(node: ts.ImportDeclaration, _sourceFile: ts.SourceFile): string[] {
   const ms = node.moduleSpecifier;

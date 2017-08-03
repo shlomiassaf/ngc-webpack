@@ -1,19 +1,32 @@
 import * as ts from 'typescript';
-import './monket-patch-ts';
+
 import * as utils from '../utils';
 import { BaseTransformWalker, WalkerContext } from './base-transform-walker';
-import { isUndefined } from "util";
+import { MockTypeChecker } from './mock-type-checker';
 
 export class AotWalkerContext extends WalkerContext {
+  scope: ts.SyntaxKind[] = [];
+
+  addScope(node: ts.Node): void {
+    this.scope.push(node.kind);
+  }
+
   currentClass?: ts.ClassDeclaration;
   currentClassParam?: ts.ParameterDeclaration;
   currentClassProp?: ts.PropertyDeclaration;
   currentClassMethod?: ts.MethodDeclaration;
 }
 
+let mockTypeChecker: MockTypeChecker;
+
 export class AotTransformWalker extends BaseTransformWalker<AotWalkerContext> {
 
   public angularImports: string[];
+
+  private get mocker(): MockTypeChecker {
+    return mockTypeChecker || (mockTypeChecker = new MockTypeChecker(this.context.getCompilerOptions()));
+  }
+
 
   constructor(public sourceFile: ts.SourceFile,
               public context: ts.TransformationContext,
@@ -32,11 +45,7 @@ export class AotTransformWalker extends BaseTransformWalker<AotWalkerContext> {
     if (this.sourceFile.fileName.endsWith('ngfactory.ts')) {
       return this.sourceFile;
     } else {
-      const sourceFile: ts.SourceFile = <any>super.walk();
-      if (sourceFile !== this.sourceFile) {
-        sourceFile['symbol'] = this.sourceFile['symbol'];
-      }
-      return sourceFile;
+      return <any>super.walk();
     }
   }
 
@@ -84,36 +93,38 @@ export class AotTransformWalker extends BaseTransformWalker<AotWalkerContext> {
   }
 
   protected visitClassDeclaration(node: ts.ClassDeclaration) {
-    const members: any = node.members || [];
+    if (node.decorators && node.decorators.some( n => this.isAngularDecorator(n)) ) {
+      const members: any = node.members || [];
+      const ctorParams = this.classCtorParamsToLiteralExpressions(node);
 
-    const ctorParams = this.classCtorParamsToLiteralExpressions(node);
-    if (ctorParams && ctorParams.length > 0) {
-      const m = ts.createMethod(
-        undefined,
-        [ ts.createToken(ts.SyntaxKind.StaticKeyword) ],
-        undefined,
-        ts.createIdentifier('ctorParameters'),
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        ts.createBlock( [ts.createReturn(ts.createArrayLiteral(ctorParams))] )
+      if (ctorParams && ctorParams.length > 0) {
+        const m = ts.createMethod(
+          undefined,
+          [ ts.createToken(ts.SyntaxKind.StaticKeyword) ],
+          undefined,
+          ts.createIdentifier('ctorParameters'),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          ts.createBlock( [ts.createReturn(ts.createArrayLiteral(ctorParams))] )
+        );
+        members.push(m);
+      }
+
+      const decorators = this.filterNodes(node.decorators, n => !this.isAngularDecorator(n));
+      node = ts.updateClassDeclaration(
+        node,
+        decorators.length > 0 ? node.decorators : undefined,
+        node.modifiers,
+        node.name,
+        node.typeParameters,
+        node.heritageClauses,
+        members && members.length > 0 ? members : undefined
       );
-      members.push(m);
     }
 
-    const decorators = this.filterNodes(node.decorators, n => !this.isAngularDecorator(n));
-    let newDec = <any>ts.updateClassDeclaration(
-      node,
-      decorators.length > 0 ? node.decorators : undefined,
-      node.modifiers,
-      node.name,
-      node.typeParameters,
-      node.heritageClauses,
-      members && members.length > 0 ? members : undefined
-    );
-
-    return super.visitClassDeclaration(newDec);
+    return super.visitClassDeclaration(node);
   }
 
   protected visitParameterDeclaration(node: ts.ParameterDeclaration) {
@@ -181,7 +192,7 @@ export class AotTransformWalker extends BaseTransformWalker<AotWalkerContext> {
       return this.isAngularDecorator(node)
         ? undefined
         : node
-        ;
+      ;
     }
 
     return node;
@@ -215,7 +226,14 @@ export class AotTransformWalker extends BaseTransformWalker<AotWalkerContext> {
 
 
   private ctorParameterFromTypeReference(paramNode: ts.ParameterDeclaration): ts.ObjectLiteralExpression {
-    const typeName = utils.ctorParameName(paramNode);
+
+    if (!this.mocker.hasFile(this.sourceFile.fileName)) {
+      // we must use virtual files and not the actual file since previous loaders might have changed
+      // the code.
+      this.mocker.addVirtFile(this.sourceFile.fileName, this.sourceFile.text);
+    }
+
+    const typeName = this.ctorParameName(paramNode);
 
     const decorators = this.findAstNodes(paramNode, ts.SyntaxKind.Decorator) as ts.Decorator[];
     const objLiteralDecorators = this.decoratorsAsObjectLiteral(decorators);
@@ -267,5 +285,45 @@ export class AotTransformWalker extends BaseTransformWalker<AotWalkerContext> {
         return ts.createObjectLiteral(propAssignments);
       });
 
+  }
+
+  private ctorParameName(paramNode: ts.ParameterDeclaration): string {
+    let typeName = 'undefined';
+
+    if (paramNode.type) {
+      switch (paramNode.type.kind) {
+        case ts.SyntaxKind.TypeReference:
+          const checker: ts.TypeChecker = this.mocker.program.getTypeChecker();
+          paramNode = utils.findRemoteMatch(<any>this.mocker.getSourceFile(this.sourceFile.fileName), <any>paramNode);
+
+          const type = paramNode.type as ts.TypeReferenceNode;
+          let symbolFlags = ts.SymbolFlags.None;
+
+          if(checker) {
+            const tsType = checker.getTypeFromTypeNode(type);
+            if (tsType) {
+              symbolFlags = tsType.symbol.flags;
+            }
+          }
+
+          if ( symbolFlags && ( symbolFlags & ts.SymbolFlags.Interface
+            || symbolFlags & ts.SymbolFlags.TypeAlias
+            || symbolFlags & ts.SymbolFlags.TypeLiteral) ) {
+            typeName = 'Object';
+          } else if (type.typeName) {
+            typeName = type.typeName.getText(this.sourceFile);
+          } else {
+            typeName = type.getText(this.sourceFile);
+          }
+          break;
+        case ts.SyntaxKind.AnyKeyword:
+          typeName = 'undefined';
+          break;
+        default:
+          typeName = 'null';
+      }
+    }
+
+    return typeName;
   }
 }

@@ -5,9 +5,8 @@ import { Observable } from 'rxjs/Observable';
 import { Subject } from 'rxjs/Subject';
 
 import ngcLoader from '@ngtools/webpack';
-import aotCleanLoader from '../../src/aot-clean-transformer/loader';
 
-import { aotCleanupTransformer } from '../../src/aot-clean-transformer';
+import { patching, aotCleanupTransformer } from '../../src/aot-clean-transformer';
 
 export const tsConfig = {
   target: ts.ScriptTarget.ES5,
@@ -29,11 +28,18 @@ export const tsConfig = {
   ]
 };
 
+
+
 export function compile(filePaths: string[]): { [filename: string]: string } {
+
+  const dePatcher = patching.patchTypeScript();
+
   const program = ts.createProgram(filePaths, tsConfig);
 
+  const wrappedTransformer = patching.patchTransformer(aotCleanupTransformer);
+
   const transformers: ts.CustomTransformers = {
-    before: [ aotCleanupTransformer ],
+    before: [ wrappedTransformer ],
     after: []
   };
 
@@ -45,6 +51,8 @@ export function compile(filePaths: string[]): { [filename: string]: string } {
   };
 
   const { emitSkipped, diagnostics } = program.emit(undefined, writeFileCallback, undefined, false, transformers);
+
+  dePatcher();
 
   if (emitSkipped) {
     throw new Error(diagnostics.map(diagnostic => diagnostic.messageText).join('\n'));
@@ -66,9 +74,9 @@ const ngToolsLoaderHitEmitter = new Subject<NgToolsLoaderOutput>();
 
 export const onNgToolsLoaderHit: Observable<NgToolsLoaderOutput> = ngToolsLoaderHitEmitter.asObservable();
 
-export let hijackedLoader: 'ngtools' | 'self' = 'ngtools';
+export let hijackedLoader: l.Loader;
 
-export function setWrappedLoader(loader: 'ngtools' | 'self'): void {
+export function setWrappedLoader(loader: l.Loader): void {
   hijackedLoader = loader;
 }
 
@@ -92,17 +100,14 @@ export function ngToolsLoaderWrapper(this: l.LoaderContext & { _compilation: any
     return callbackHijack;
   };
 
-  if (hijackedLoader === 'self') {
+  if (hijackedLoader !== ngcLoader) {
     Object.defineProperty(wrappedThis, 'query', { value: {
       disable: false,
       tsConfigPath: './tsconfig.aot-transformer.json'
     } });
   }
 
-  const result = hijackedLoader === 'self'
-    ? aotCleanLoader.call(wrappedThis, source, srcMap)
-    : ngcLoader.call(wrappedThis, source, srcMap)
-  ;
+  const result = hijackedLoader.call(wrappedThis, source, srcMap);
 
 
   return result;

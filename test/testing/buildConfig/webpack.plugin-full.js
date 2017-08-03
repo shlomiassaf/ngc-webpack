@@ -1,4 +1,4 @@
-// THIS CONFIG RUNS THE PLUGIN WITHOUT ADVANCED WEBPACK TOOLS (extract css, html plugin etc...)
+// THIS CONFIG RUNS THE PLUGIN WITH ADVANCED WEBPACK TOOLS (extract css, html plugin etc...)
 const path = require('path');
 const webpack = require('webpack');
 
@@ -6,15 +6,17 @@ const NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplaceme
 const CommonsChunkPlugin = require('webpack/lib/optimize/CommonsChunkPlugin');
 const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
 const LoaderOptionsPlugin = require('webpack/lib/LoaderOptionsPlugin');
-
+const ExtractTextPlugin = require("extract-text-webpack-plugin");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ngcWebpack = require('../../../dist/index');
 
 /**
  *
- * @param aotCleanup loader or transformer
+ * @param aotCleanup loader or transformer (defaults to loader)
  */
 module.exports = function (aotCleanup) {
 
+  if (!aotCleanup) aotCleanup = 'loader';
   const tsRule = {
     test: /\.ts$/,
     use: [
@@ -22,14 +24,14 @@ module.exports = function (aotCleanup) {
         loader: 'ng-router-loader',
         options: {
           loader: 'async-import',
-          genDir: 'dist/test/codegen_plugin',
+          genDir: 'dist/test/codegen_plugin-full',
           aot: true
         }
       },
       {
         loader: 'awesome-typescript-loader',
         options: {
-          configFileName: 'tsconfig.plugin.json'
+          configFileName: 'tsconfig.plugin-full.json'
         }
       },
       'angular2-template-loader'
@@ -54,15 +56,15 @@ module.exports = function (aotCleanup) {
   }
 
   return {
-    devtool: 'cheap-module-source-map',
+    devtool: false,
 
     entry: {
-      'main':  './test/ng-app/main.browser.aot.plugin.ts'
+      'main':  './test/ng-app/main.browser.aot.plugin-full.ts'
     },
 
     output: {
 
-      path: path.join(process.cwd(), `dist/test/ng-app-plugin`),
+      path: path.join(process.cwd(), `dist/test/ng-app-plugin-full`),
 
       filename: '[name].bundle.js',
 
@@ -88,27 +90,19 @@ module.exports = function (aotCleanup) {
         tsRule,
         {
           test: /\.html$/,
-          use: 'raw-loader'
+          use: 'html-loader'
         },
 
-        /*
-         * to string and css loader support for *.css files (from Angular components)
-         * Returns file content as string
-         *
-         */
         {
-          test: /\.css$/,
-          use: ['to-string-loader', 'css-loader']
+          test: /\.(css|scss)/,
+          exclude: /styles\/.+\.(css|scss)$/,
+          use: ['to-string-loader', 'css-loader', 'sass-loader'],
         },
-
-        /*
-         * to string and sass loader support for *.scss files (from Angular components)
-         * Returns compiled css content as string
-         *
-         */
         {
-          test: /\.scss$/,
-          use: ['to-string-loader', 'css-loader', 'sass-loader']
+          test: /styles\/.+\.(css|scss)$/,
+          loader: ExtractTextPlugin.extract({
+            use: ['css-loader', 'sass-loader'],
+          })
         },
         {test: /\.(png|ico|gif)$/, loader: "file-loader?name=bundle.[name].[ext]"}
       ]
@@ -116,12 +110,21 @@ module.exports = function (aotCleanup) {
 
     plugins: [
       new CheckerPlugin(),
+      new webpack.ContextReplacementPlugin(
+        // The (\\|\/) piece accounts for path separators in *nix and Windows
+        /angular(\\|\/)core(\\|\/)@angular/,
+        'test'
+      ),
       new LoaderOptionsPlugin({}),
+      new ExtractTextPlugin("bundle.css"),
+      new HtmlWebpackPlugin({
+        template: './test/ng-app/index.html',
+        inject: true,
+        filename: "index.html",
+      }),
       new ngcWebpack.NgcWebpackPlugin({
-        tsConfig: path.resolve('tsconfig.plugin.json'),
-        pathTransformer: (p) => p.endsWith('app.component.css') ? path.resolve('test/testing/replaced-resource.scss') : p,
-        sourceTransformer: (p, s) => p.endsWith('home.component.html') ? 'HTML WAS HIJACKED BY A TEST!!!' : s,
-        resourceOverride: path.resolve('test/ng-app/empty.js')
+        disabled: false,
+        tsConfig: path.resolve('tsconfig.plugin-full.json')
       })
     ],
 

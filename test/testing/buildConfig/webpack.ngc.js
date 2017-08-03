@@ -81,7 +81,8 @@ module.exports = function () {
         {
           test: /\.scss$/,
           use: ['to-string-loader', 'css-loader', 'sass-loader']
-        }
+        },
+        {test: /\.(png|ico|gif)$/, loader: "file-loader?name=bundle.[name].[ext]"}
       ]
     },
 

@@ -43,12 +43,12 @@ export class TypeScriptFileRefactor {
     this._fileName = fileName = resolve(fileName, compilerOptions).replace(/\\/g, '/');
 
     if (program) {
-        this._sourceFile = program.getSourceFile(fileName);
+      this._sourceFile = program.getSourceFile(fileName);
     }
 
-    // if (!this._sourceFile) {
-    //   this._sourceFile = ts.createSourceFile(fileName, source || host.readFile(fileName), ts.ScriptTarget.Latest, true);
-    // }
+    if (!this._sourceFile && host.fileExists(fileName)) {
+      this._sourceFile = ts.createSourceFile(fileName, host.readFile(fileName), ts.ScriptTarget.Latest, true);
+    }
 
     this._sourceText = this._sourceFile.getFullText(this._sourceFile);
     this._sourceString = new MagicString(this._sourceText);

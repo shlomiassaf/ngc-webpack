@@ -38,26 +38,23 @@ export function angularImportsFromNode(node: ts.ImportDeclaration, _sourceFile: 
   }
 }
 
-export function ctorParameName(paramNode: ts.ParameterDeclaration): string {
-  let typeName = 'undefined';
-
-  if (paramNode.type) {
-    switch (paramNode.type.kind) {
-      case ts.SyntaxKind.TypeReference:
-        const type = paramNode.type as ts.TypeReferenceNode;
-        if (type.typeName) {
-          typeName = type.typeName.getText(this.sourceFile);
-        } else {
-          typeName = type.getText(this.sourceFile);
-        }
-        break;
-      case ts.SyntaxKind.AnyKeyword:
-        typeName = 'undefined';
-        break;
-      default:
-        typeName = 'null';
+/**
+ * Find the matching twin node for a node where both root and node have a twin SourceFile.
+ * Twin SourceFiles are 2 instances of a the same source file.
+ *
+ * @param root
+ * @param node
+ * @return {any}
+ */
+export function findRemoteMatch<T extends ts.Node>(root: ts.Node, node: T): T | undefined {
+  if (root.kind === node.kind && root.getStart() === node.getStart()) {
+    return <any>root;
+  } else if (node.getStart() >= root.getStart() && node.getEnd() <= root.getEnd()) {
+    for (let child of root.getChildren(root.getSourceFile())) {
+      const result = findRemoteMatch(child, node);
+      if (result) {
+        return result;
+      }
     }
   }
-
-  return typeName;
 }
