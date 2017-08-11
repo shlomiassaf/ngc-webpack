@@ -280,8 +280,8 @@ export function aotCleanLoader(this: l.LoaderContext & { _compilation: any }, so
     } else {
       for (let e of errors) {
         this.emitError(e.message);
-        cb(new Error('NgcWebpack AotCleanupLoader: Multiple Errors'));
       }
+      cb(new Error('NgcWebpack AotCleanupLoader: Multiple Errors'));
     }
   } else {
     try {
