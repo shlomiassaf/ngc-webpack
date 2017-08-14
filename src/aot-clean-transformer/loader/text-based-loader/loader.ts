@@ -123,8 +123,14 @@ function _addCtorParameters(classNode: ts.ClassDeclaration,
     return _ctorParameterFromTypeReference(paramNode, angularImports, refactor);
   });
 
-  const ctorParametersDecl = `static ctorParameters() { return [ ${params.join(', ')} ]; }`;
-  refactor.prependBefore(classNode.getLastToken(refactor.sourceFile), ctorParametersDecl);
+  // Type script will complain if extending class static's ctorParameters method does not match parent
+  if (classNode.heritageClauses && classNode.heritageClauses.some( hc => hc.token === ts.SyntaxKind.ExtendsKeyword)) {
+    const ctorParametersDecl = `(${classNode.name.text} as any).ctorParameters = function () { return [ ${params.join(', ')} ]; }`;
+    refactor.appendAfter(classNode.getLastToken(refactor.sourceFile), ctorParametersDecl);
+  } else {
+    const ctorParametersDecl = `static ctorParameters() { return [ ${params.join(', ')} ]; }`;
+    refactor.prependBefore(classNode.getLastToken(refactor.sourceFile), ctorParametersDecl);
+  }
 }
 
 
@@ -210,6 +216,14 @@ export interface AotCleanupLoaderOptions {
   compilerOptions?: any;
 }
 
+/**
+ * Reset the loader, allows running a new program on the same session.
+ * @internal
+ */
+export function resetLoader(): void {
+  program = compilerHost = AOTMode = undefined;
+}
+
 export function aotCleanLoader(this: l.LoaderContext & { _compilation: any }, source: string | null, sourceMap: string | null) {
   const cb = this.async();
   const sourceFileName: string = this.resourcePath;
@@ -279,7 +293,7 @@ export function aotCleanLoader(this: l.LoaderContext & { _compilation: any }, so
       cb(errors[0]);
     } else {
       for (let e of errors) {
-        this.emitError(e.message);
+        this.emitError(<any>e);
       }
       cb(new Error('NgcWebpack AotCleanupLoader: Multiple Errors'));
     }

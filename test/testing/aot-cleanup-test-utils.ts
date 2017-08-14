@@ -32,7 +32,7 @@ export const tsConfig = {
 
 export function compile(filePaths: string[]): { [filename: string]: string } {
 
-  const dePatcher = patching.patchTypeScript();
+  patching.patchTypeScript();
 
   const program = ts.createProgram(filePaths, tsConfig);
 
@@ -52,7 +52,7 @@ export function compile(filePaths: string[]): { [filename: string]: string } {
 
   const { emitSkipped, diagnostics } = program.emit(undefined, writeFileCallback, undefined, false, transformers);
 
-  dePatcher();
+  patching.unpathTypeScript();
 
   if (emitSkipped) {
     throw new Error(diagnostics.map(diagnostic => diagnostic.messageText).join('\n'));

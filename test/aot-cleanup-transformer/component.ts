@@ -6,6 +6,7 @@ import { Http } from '@angular/http';
 
 import { MyTokenToken, NonAngulaProp, NonAngulaParam, NonAngularClassDecorator } from './service';
 import { MyDirectiveDirective } from './directive';
+import { MyBaseComponentComponent } from './base-component';
 
 
 export interface MyInterface {
@@ -17,7 +18,7 @@ export interface MyInterface {
   styles: [``],
   template: `<h1 myDirective>{{ 'My Component' | myPipe }} + {{token}}</h1>`
 })
-export class MyComponentComponent {
+export class MyComponentComponent extends MyBaseComponentComponent {
   @ViewChild(MyDirectiveDirective) public myDirective: MyDirectiveDirective;
 
   @HostBinding() @NonAngulaProp('test', 100) hostBinding: string;
@@ -32,6 +33,7 @@ export class MyComponentComponent {
     @Self() public vcr: ViewContainerRef,
     @Optional() @Inject(MyTokenToken) public token?: MyInterface,
     @Optional() public http?: Http) {
+    super(sdafef, cdr);
 
     console.log(this.myDirective);
   }

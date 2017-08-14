@@ -188,7 +188,35 @@ describe('AOT Cleanup transformer', async () => {
 
           // FIX #2
           if (ngToolsSource[i].startsWith('    MyComponentComponent.ctorParameters = function ()')) {
-            ngToolsSource[i] = ngToolsSource[i].replace('MyInterface', 'Object');
+            const row = ngToolsSource.splice(i, 1)[0];
+            ngToolsSource.pop();
+            ngToolsSource.push(row.replace('MyInterface', 'Object').trim());
+            ngToolsSource.push('');
+          }
+        }
+      }
+
+      else if (key === 'base-component.js') {
+        for (let i=0; i<ngToolsSource.length; i++) {
+
+          // FIX: Constructor's design:paramtypes
+          if (ngToolsSource[i].startsWith('        __metadata("design:paramtypes", [') && ngToolsSource[i].includes('typeof ChangeDetectorRef !== "undefined"')) {
+            let line = ngToolsSource[i].substr('        __metadata("design:paramtypes", ['.length);
+            line = line.substr(0, line.length -2); // remove closing ])
+            const params = line.split(',').map(p => {
+              p = p.trim();
+              if (p.startsWith('typeof')) {
+                p = p.match(/typeof \(_.\s=\stypeof\s(.+)\s!==\s"undefined"/)[1];
+              }
+              return p;
+            });
+
+            // guard against test code changes...
+            expect(params).to.deep.equal(['Object', 'ChangeDetectorRef']);
+
+            // the transformer should conver all of the types to "Object" since they are not values.
+            ngToolsSource[i] = '        __metadata("design:paramtypes", [Object, ChangeDetectorRef])';
+            ngToolsSource.splice(i+3, 1); // remove var _a, _b;
           }
         }
       }

@@ -1,5 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, SkipSelf, ViewContainerRef, Optional } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+
+@Component({
+  selector: 'base-about',
+  template: ``
+})
+export class BaseAboutComponent {
+  constructor(public route: ActivatedRoute) {
+
+  }
+}
 
 @Component({
   selector: 'about',
@@ -19,10 +29,10 @@ import { ActivatedRoute } from '@angular/router';
     <pre>this.localState = {{ localState | json }}</pre>
   `
 })
-export class AboutComponent {
+export class AboutComponent extends BaseAboutComponent {
   localState: any;
-  constructor(public route: ActivatedRoute) {
-
+  constructor(route: ActivatedRoute, public vcRef: ViewContainerRef) {
+    super(route);
   }
 
   ngOnInit() {
@@ -34,6 +44,8 @@ export class AboutComponent {
       });
 
     console.log('hello `About` component');
+    console.log(this.vcRef);
+
     // static data that is bundled
     // var mockData = require('assets/mock-data/mock-data.json');
     // console.log('mockData', mockData);

@@ -1,7 +1,19 @@
 import * as ts from 'typescript';
 
+let unpatch: () => void = undefined;
+
 export namespace patching {
-  export function patchTypeScript() {
+  export function unpathTypeScript() {
+    if (unpatch) {
+      unpatch();
+    }
+  }
+
+  export function patchTypeScript(): void {
+    if (unpatch) {
+      return;
+    }
+
     const toMonkeyPatch = ['nodeCanBeDecorated', 'nodeIsDecorated', 'childIsDecorated', 'nodeOrChildIsDecorated'];
     const originalPatched = toMonkeyPatch.reduce( (obj, k) => { obj[k] = ts[k]; return obj; }, {} );
     const patching = {
@@ -27,7 +39,7 @@ export namespace patching {
     };
     toMonkeyPatch.forEach( k => ts[k] = patching[k]);
 
-    return () => toMonkeyPatch.forEach( k => ts[k] = originalPatched[k]);
+    unpatch = () => toMonkeyPatch.forEach( k => ts[k] = originalPatched[k]);
   }
 
   export function patchTransformer(transformFactory: ts.TransformerFactory<any>) {

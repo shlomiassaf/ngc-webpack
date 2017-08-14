@@ -1,1 +1,1 @@
-export { aotCleanLoader } from './loader';
+export { aotCleanLoader, resetLoader } from './loader';

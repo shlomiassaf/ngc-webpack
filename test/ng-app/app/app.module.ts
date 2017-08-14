@@ -14,7 +14,7 @@ import { ROUTES } from './app.routes';
 // App is our top level component
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home';
-import { AboutComponent } from './about';
+import { AboutComponent, BaseAboutComponent } from './about';
 import { NoContentComponent } from './no-content';
 import { XLarge } from './home/x-large';
 
@@ -28,6 +28,7 @@ const APP_PROVIDERS = [
 @NgModule({
   bootstrap: [ AppComponent ],
   declarations: [
+    BaseAboutComponent,
     AppComponent,
     AboutComponent,
     HomeComponent,

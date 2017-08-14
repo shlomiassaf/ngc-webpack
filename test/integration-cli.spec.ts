@@ -7,6 +7,7 @@ const rimraf = require('rimraf');
 const mapper = require('node-map-directory');
 
 import { spawn, runWebpack, resolveWebpackConfig, getTsConfigMeta, configs, occurrences, logWebpackStats } from './testing/utils';
+import { resetLoader } from '../src/aot-clean-transformer/loader/text-based-loader';
 
 describe('Integration', () => {
   const tsMetaNgcW = getTsConfigMeta(configs.cli.ts);
@@ -124,12 +125,20 @@ describe('Integration', () => {
     });
 
     test = it('should compile using webpack plugin with aot cleanup LOADER (default, text based)', () => {
-
       const wpConfig = resolveWebpackConfig(require(configs.plugin.wp)('loader'));
+
+      resetLoader();
 
       return runWebpack(wpConfig).done
         .then( (stats) => {
           logWebpackStats(stats);
+
+          const compileErrors = stats['compilation'] && stats['compilation'].errors;
+          if (compileErrors) {
+            expect(compileErrors.length).to.be
+            .lt(1, `Expected no TypeScript errors, found ${compileErrors.length}\n` + compileErrors.map(e => e.message + '\n'));
+          }
+
           expect(fs.existsSync(tsMetaPlugin.absGenDir));
           const bCode = fs.readFileSync(Path.resolve('dist/test/ng-app-plugin/main.bundle.js'), 'utf8');
           expect(bCode.length).lt(bundleCode.length);
@@ -146,6 +155,13 @@ describe('Integration', () => {
       return runWebpack(wpConfig).done
         .then( (stats) => {
           logWebpackStats(stats);
+
+          const compileErrors = stats['compilation'] && stats['compilation'].errors;
+          if (compileErrors) {
+            expect(compileErrors.length).to.be
+            .lt(1, `Expected no TypeScript errors, found ${compileErrors.length}\n` + compileErrors.map(e => e.message + '\n'));
+          }
+
           expect(fs.existsSync(tsMetaPlugin.absGenDir));
           const bCode = fs.readFileSync(Path.resolve('dist/test/ng-app-plugin/main.bundle.js'), 'utf8');
           expect(bCode.length).lt(bundleCode.length);

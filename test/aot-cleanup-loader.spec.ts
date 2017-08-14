@@ -7,7 +7,7 @@ const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
 
 
 import ngcLoader from '@ngtools/webpack';
-import { aotCleanLoader as aotCleanLoaderText } from '../src/aot-clean-transformer/loader/text-based-loader';
+import { aotCleanLoader as aotCleanLoaderText, resetLoader } from '../src/aot-clean-transformer/loader/text-based-loader';
 import { aotCleanLoader as aotCleanLoaderTransformer } from '../src/aot-clean-transformer/loader/transformer-based-loader';
 
 import * as aotCleanupTestUtils from './testing/aot-cleanup-test-utils';
@@ -61,12 +61,16 @@ describe('AOT Cleanup loader', () => {
           : loaderType === 'Transformer' ? aotCleanLoaderTransformer : undefined
         ;
 
+        if (loaderType === 'Text') {
+          resetLoader();
+        }
+
         if (!loaderFn) {
           throw new Error(`${loaderFn} unknown`);
         }
 
         selfCompiled = {};
-        aotCleanupTestUtils.setWrappedLoader(loaderType === 'Text' ? aotCleanLoaderText : aotCleanLoaderTransformer);
+        aotCleanupTestUtils.setWrappedLoader(loaderFn);
         const wpConfig = Object.assign({} , resolveWebpackConfig(require(configs.aotTransform.wp)), { plugins: [new CheckerPlugin()] });
 
         return runWebpack(wpConfig).done
@@ -145,7 +149,10 @@ describe('AOT Cleanup loader', () => {
         else if (key === 'component.ts') {
           for (let i=0; i<ngToolsSource.length; i++) {
             if (ngToolsSource[i].startsWith('    MyComponentComponent.ctorParameters = function ()')) {
-              ngToolsSource[i] = ngToolsSource[i].replace('MyInterface', 'Object');
+              const row = ngToolsSource.splice(i, 1)[0];
+              ngToolsSource.pop();
+              ngToolsSource.push(row.replace('MyInterface', 'Object').trim());
+              ngToolsSource.push('');
               break;
             }
           }

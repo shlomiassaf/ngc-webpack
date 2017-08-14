@@ -98,33 +98,68 @@ export class AotTransformWalker extends BaseTransformWalker<AotWalkerContext> {
       const ctorParams = this.classCtorParamsToLiteralExpressions(node);
 
       if (ctorParams && ctorParams.length > 0) {
-        const m = ts.createMethod(
-          undefined,
-          [ ts.createToken(ts.SyntaxKind.StaticKeyword) ],
-          undefined,
-          ts.createIdentifier('ctorParameters'),
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          ts.createBlock( [ts.createReturn(ts.createArrayLiteral(ctorParams))] )
-        );
-        members.push(m);
+        // Since we are to remove the decorators we need to preserve constructor parameter types and
+        // param decorators for angular to be able to use them at runtime.
+        //
+        // This is done by setting a static method on the class called `ctorParameters`
+        // The method returns an array of type information for each ctor param.
+        // The type information includes the type value and an array of decorator information.
+        // Decorator information holds the decorator function and arguments (metadata) used as params
+        // for the decorator factory. Decorator information exists only if the param has decorators.
+        // { type: TYPE_VALUE, decorators: [ { type: DECORATOR_VALUE: args: [...] }
+        //
+        // If the class extends a base class astatic method might fail type check when the signature
+        // of constructors does not match.
+        // Type script will complain if extending class static's ctorParameters method does not match parent
+        // If the class extends another class we do not set the `ctorParameters` function as a
+        // static class member method since it might have a different signature then the `ctorParameters`
+        // method on the parent class which leads to TS complaining
+        // instead we create an assignment to the class object right after class declaration:
+        //   export class MyClass { }
+        //   (MyClass as any).ctorParameters = function() { return [ ... ]; }
+        //
+        // `ctorParameters` does not exist on `MyClass` so we cast it to `any`
+        if (node.heritageClauses && node.heritageClauses.some( hc => hc.token === ts.SyntaxKind.ExtendsKeyword)) {
+          const statements: ts.Statement[] = [<any>super.visitClassDeclaration(<any>this.updateClassDeclaration(node, members))];
+
+          const leftSideBase = ts.createParen(ts.createAsExpression(node.name, ts.createTypeReferenceNode('any', undefined)));
+          const leftSide = ts.createPropertyAccess(leftSideBase, ts.createIdentifier('ctorParameters'));
+          const rightSide = ts.createFunctionExpression(undefined, undefined, undefined, undefined, undefined, undefined, ts.createBlock( [ts.createReturn(ts.createArrayLiteral(ctorParams))] ));
+          const statement = ts.createStatement(ts.createAssignment(leftSide, rightSide));
+          statements.push(<any>statement);
+          return statements as any;
+
+        } else {
+          const m = ts.createMethod(
+            undefined,
+            [ ts.createToken(ts.SyntaxKind.StaticKeyword) ],
+            undefined,
+            ts.createIdentifier('ctorParameters'),
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            ts.createBlock( [ts.createReturn(ts.createArrayLiteral(ctorParams))] )
+          );
+          members.push(m);
+          return super.visitClassDeclaration(<any>this.updateClassDeclaration(node, members));
+        }
       }
-
-      const decorators = this.filterNodes(node.decorators, n => !this.isAngularDecorator(n));
-      node = ts.updateClassDeclaration(
-        node,
-        decorators.length > 0 ? node.decorators : undefined,
-        node.modifiers,
-        node.name,
-        node.typeParameters,
-        node.heritageClauses,
-        members && members.length > 0 ? members : undefined
-      );
     }
-
     return super.visitClassDeclaration(node);
+  }
+
+  private updateClassDeclaration(node: ts.ClassDeclaration, members: ts.NodeArray<ts.ClassElement>) {
+    const decorators = this.filterNodes(node.decorators, n => !this.isAngularDecorator(n));
+    return ts.updateClassDeclaration(
+      node,
+      decorators.length > 0 ? node.decorators : undefined,
+      node.modifiers,
+      node.name,
+      node.typeParameters,
+      node.heritageClauses,
+      members && members.length > 0 ? members : undefined
+    );
   }
 
   protected visitParameterDeclaration(node: ts.ParameterDeclaration) {

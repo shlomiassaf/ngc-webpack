@@ -4,10 +4,12 @@ import { expect } from 'chai';
 const rimraf = require('rimraf');
 
 import { runWebpack, resolveWebpackConfig, getTsConfigMeta, configs, logWebpackStats } from './testing/utils';
+import { resetLoader } from '../src/aot-clean-transformer/loader/text-based-loader';
 
 describe('Full Webpack build', () => {
+
   describe('NGTools baseline', () => {
-    
+
     const outputMap = [
       ['main.bundle.js', 1580541],
       ['bundle.avatar.png', 2096],
@@ -20,13 +22,29 @@ describe('Full Webpack build', () => {
     ];
 
     let test = it('should compile using webpack plugin-full and match output files', async () => {
+      const transformType: 'transformer' | 'loader' = 'loader';
+
       const tsMetaPluginFull = getTsConfigMeta(configs.pluginFull.ts);
-      const wpConfig = resolveWebpackConfig(require(configs.pluginFull.wp)());
+      const wpConfig = resolveWebpackConfig(require(configs.pluginFull.wp)(transformType));
+
+      if (transformType === 'loader') {
+        resetLoader();
+      }
+
       rimraf.sync(tsMetaPluginFull.absGenDir);
 
       const stats = await runWebpack(wpConfig).done;
       logWebpackStats(stats);
+
+      const compileErrors = stats['compilation'] && stats['compilation'].errors;
+      if (compileErrors) {
+        expect(compileErrors.length).to.be
+          .lt(1, `Expected no TypeScript errors, found ${compileErrors.length}\n` + compileErrors.map(e => e.message + '\n'));
+      }
+
       expect(fs.existsSync(tsMetaPluginFull.absGenDir));
+
+      // throw new Error("Module build failed:
 
       const assets = stats.toJson().assets;
       expect(assets.length).to.equal(outputMap.length);

@@ -94,7 +94,7 @@ module.exports = function (aotCleanup) {
         },
 
         {
-          test: /\.(css|scss)/,
+          test: /\.(css|scss)$/,
           exclude: /styles\/.+\.(css|scss)$/,
           use: ['to-string-loader', 'css-loader', 'sass-loader'],
         },
