@@ -1,9 +1,5 @@
 export * from './src/plugin';
-export { aotCleanupTransformer, patching } from './src/aot-clean-transformer';
+export * from './src/plugin-options';
 
-export { useTransformerBasedLoader } from './src/aot-clean-transformer/loader';
-
-import aotCleanLoader from './src/aot-clean-transformer/loader';
-export default aotCleanLoader;
-
-
+import loader from '@ngtools/webpack';
+export default loader;
