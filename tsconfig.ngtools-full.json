@@ -7,7 +7,7 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "sourceMap": false,
-    "noEmit": true,
+    "outDir": "./dist/test/ng-app-ngtools-full-tsc-out",
     "noEmitHelpers": true,
     "strictNullChecks": false,
     "baseUrl": ".",
@@ -21,23 +21,8 @@
   },
   "exclude": [
     "node_modules",
-    "src",
     "dist",
     "test/testing",
-    "test/*.spec.ts",
-    "test/aot-cleanup-transformer",
-    "test/ng-app/main.browser.aot.ngc.ts",
-    "test/ng-app/main.browser.aot.cli.ts",
-    "test/ng-app/main.browser.aot.plugin.ts",
-    "test/ng-app/main.browser.aot.plugin-full.ts"
-  ],
-  "awesomeTypescriptLoaderOptions": {
-    "useWebpackText": true
-  },
-  "angularCompilerOptions": {
-    "genDir": "dist/test/codegen_ngtools-full"
-  },
-  "compileOnSave": false,
-  "buildOnSave": false,
-  "atom": { "rewriteTsconfig": false }
+    "test/*.spec.ts"
+  ]
 }

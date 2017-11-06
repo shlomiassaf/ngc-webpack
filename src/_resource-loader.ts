@@ -1,10 +1,6 @@
-/*
- * Taken from @ngtools/webpack
- * https://github.com/angular/angular-cli/blob/master/packages/%40ngtools/webpack/src/resource_loader.ts
- */
+// Taken from
+// https://github.com/angular/angular-cli/blob/master/packages/%40ngtools/webpack/src/resource_loader.ts
 
-import {ResourceLoader} from '@angular/compiler';
-import {readFileSync} from 'fs';
 import * as vm from 'vm';
 import * as path from 'path';
 
@@ -14,17 +10,35 @@ const LoaderTargetPlugin = require('webpack/lib/LoaderTargetPlugin');
 const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin');
 
 
-export class WebpackResourceLoader implements ResourceLoader {
+export interface CompilationOutput {
+  outputName: string;
+  source: string;
+}
+
+export class WebpackResourceLoader {
+  private _parentCompilation: any;
   private _context: string;
   private _uniqueId = 0;
+  private _resourceDependencies = new Map<string, string[]>();
 
-  private emittedFiles: any = {};
+  constructor() {}
 
-  constructor(private _parentCompilation: any, private collectAssets: boolean = false) {
-    this._context = _parentCompilation.context;
+  update(parentCompilation: any) {
+    this._parentCompilation = parentCompilation;
+    this._context = parentCompilation.context;
+    this._uniqueId = 0;
   }
 
-  private _compile(filePath: string, content: string): Promise<any> {
+  getResourceDependencies(filePath: string) {
+    return this._resourceDependencies.get(filePath) || [];
+  }
+
+  private _compile(filePath: string): Promise<CompilationOutput> {
+
+    if (!this._parentCompilation) {
+      throw new Error('WebpackResourceLoader cannot be used without parentCompilation');
+    }
+
     const compilerName = `compiler(${this._uniqueId++})`;
     const outputOptions = { filename: filePath };
     const relativePath = path.relative(this._context || '', filePath);
@@ -75,60 +89,52 @@ export class WebpackResourceLoader implements ResourceLoader {
             });
 
           // Restore the parent compilation to the state like it was before the child compilation.
-          this._parentCompilation.assets[outputName] = assetsBeforeCompilation[outputName];
-          if (assetsBeforeCompilation[outputName] === undefined) {
-            // If it wasn't there - delete it.
-            delete this._parentCompilation.assets[outputName];
-          }
+          Object.keys(childCompilation.assets).forEach((fileName) => {
+            // If it wasn't there and it's a source file (absolute path) - delete it.
+            if (assetsBeforeCompilation[fileName] === undefined && path.isAbsolute(fileName)) {
+              delete this._parentCompilation.assets[fileName];
+            } else {
+              // Otherwise, add it to the parent compilation.
+              this._parentCompilation.assets[fileName] = childCompilation.assets[fileName];
+            }
+          });
 
-          if (this.collectAssets) {
-            entries[0].modules.forEach(m => {
-              if (m.assets) {
-                Object.keys(m.assets).forEach( k => {
-                  this.emittedFiles[k] = m.assets[k];
-                });
-              }
-            });
-          }
+          // Save the dependencies for this resource.
+          this._resourceDependencies.set(outputName, childCompilation.fileDependencies);
 
           resolve({
-            // Hash of the template entry point.
-            hash: entries[0].hash,
             // Output name.
-            outputName: outputName,
+            outputName,
             // Compiled code.
-            content: childCompilation.assets[outputName].source()
+            source: childCompilation.assets[outputName].source()
           });
         }
       });
     });
   }
 
-  private _evaluate(fileName: string, source: string): Promise<string> {
+  private _evaluate(output: CompilationOutput): Promise<string> {
     try {
-      const vmContext = vm.createContext(Object.assign({require: require}, global));
-      const vmScript = new vm.Script(source, {filename: fileName});
+      const outputName = output.outputName;
+      const vmContext = vm.createContext(Object.assign({ require: require }, global));
+      const vmScript = new vm.Script(output.source, { filename: outputName });
 
       // Evaluate code and cast to string
-      let newSource: string;
-      newSource = vmScript.runInContext(vmContext);
+      let evaluatedSource: string;
+      evaluatedSource = vmScript.runInContext(vmContext);
 
-      if (typeof newSource == 'string') {
-        return Promise.resolve(newSource);
+      if (typeof evaluatedSource == 'string') {
+        return Promise.resolve(evaluatedSource);
       }
 
-      return Promise.reject('The loader "' + fileName + '" didn\'t return a string.');
+      return Promise.reject('The loader "' + outputName + '" didn\'t return a string.');
     } catch (e) {
       return Promise.reject(e);
     }
   }
 
   get(filePath: string): Promise<string> {
-    return this._compile(filePath, readFileSync(filePath, 'utf8'))
-      .then((result: any) => this._evaluate(result.outputName, result.content));
-  }
-
-  getExternalAssets(): any {
-    return this.emittedFiles;
+    return this._compile(filePath)
+      .then((result: CompilationOutput) => this._evaluate(result));
   }
 }

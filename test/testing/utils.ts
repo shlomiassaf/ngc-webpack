@@ -1,7 +1,7 @@
 const Table = require('cli-table');
+import * as fs from 'fs-extra';
 import * as webpack from 'webpack';
 import { spawn as spawnFactory } from 'child_process';
-import * as fs from 'fs';
 import * as Path from 'path';
 
 export type Compiler = webpack.Compiler;
@@ -10,18 +10,6 @@ export type Stats = webpack.Stats;
 process.env.NODE_ENV = 'production';
 
 export const configs = {
-  cli: {
-    ts: Path.resolve('tsconfig.cli.json'),
-    wp: Path.resolve('test/testing/buildConfig/webpack.cli.js')
-  },
-  ngc: {
-    ts: Path.resolve('tsconfig.ngc.json'),
-    wp: Path.resolve('test/testing/buildConfig/webpack.ngc.js')
-  },
-  plugin: {
-    ts: Path.resolve('tsconfig.plugin.json'),
-    wp: Path.resolve('test/testing/buildConfig/webpack.plugin.js')
-  },
   pluginFull: {
     ts: Path.resolve('tsconfig.plugin-full.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.plugin-full.js')
@@ -29,10 +17,6 @@ export const configs = {
   ngToolsFull: {
     ts: Path.resolve('tsconfig.ngtools-full.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.ngtools-full.js')
-  },
-  aotTransform: {
-    ts: Path.resolve('tsconfig.aot-transformer.json'),
-    wp: Path.resolve('test/testing/buildConfig/webpack.aot-transformer.js')
   }
 };
 
@@ -88,11 +72,10 @@ export function spawn(cmd): Promise<any> {
   });
 }
 
-export function getTsConfigMeta(tsConfigPath: string): {tsConfig: any, absGenDir: string} {
+export function getTsConfigMeta(tsConfigPath: string): {tsConfig: any} {
   const tsConfig = JSON.parse(fs.readFileSync(tsConfigPath, 'utf8'));
   return {
-    tsConfig,
-    absGenDir: Path.resolve(Path.dirname(tsConfigPath), tsConfig.angularCompilerOptions.genDir)
+    tsConfig
   }
 }
 
@@ -160,4 +143,40 @@ export function pretty (size, nospace?, one?, places?) {
   }
 
   return mysize;
+}
+
+
+export function readFile(fileName: string) {
+  return new Promise<string>((resolve, reject) => {
+    fs.readFile(fileName, 'utf-8', (err: any, data: string) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    });
+  });
+}
+
+export function expectFileToMatch(fileName: string, regEx: RegExp | string) {
+  return readFile(fileName)
+    .then(content => {
+      if (typeof regEx == 'string') {
+        if (content.indexOf(regEx) == -1) {
+          throw new Error(`File "${fileName}" did not contain "${regEx}"...
+            Content:
+            ${content}
+            ------
+          `);
+        }
+      } else {
+        if (!content.match(regEx)) {
+          throw new Error(`File "${fileName}" did not contain "${regEx}"...
+            Content:
+            ${content}
+            ------
+          `);
+        }
+      }
+    });
 }

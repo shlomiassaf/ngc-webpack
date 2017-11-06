@@ -1,4 +1,5 @@
 {
+  "compileOnSave": false,
   "compilerOptions": {
     "target": "es5",
     "module": "es2015",
@@ -7,24 +8,21 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "sourceMap": false,
-    "outDir": "./dist/test/ng-app-plugin-full-tsc-out",
+    "outDir": "dist/test/ng-app-cli-full-tsc-out",
     "noEmitHelpers": true,
     "strictNullChecks": false,
+    "baseUrl": ".",
+    "types": [
+      "node"
+    ],
     "lib": [
       "es2015",
       "dom"
-    ],
-    "types": [
-      "node"
     ]
   },
-  "include": [
-    "test/ng-app/**/*"
-  ],
   "exclude": [
     "node_modules",
     "dist",
-    "src",
     "test/testing",
     "test/*.spec.ts"
   ]

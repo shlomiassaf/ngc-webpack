@@ -15,5 +15,3 @@ Object.defineProperty(window, 'sessionStorage', {value: mock()});
 Object.defineProperty(window, 'getComputedStyle', {
   value: () => ['-webkit-appearance']
 });
-
-import './src/@vts/vts-api/init-tdm';

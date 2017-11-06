@@ -1,92 +1,98 @@
-import * as Path from 'path';
-import { NgcCliOptions } from '@angular/compiler-cli';
-import { run, isCli } from './main';
-import { WebpackWrapper } from "./webpack-wrapper";
-import { WebpackResourceLoader } from './webpack-resource-loader';
-import { NgcWebpackPluginOptions } from './plugin-options'
+import { AngularCompilerPlugin } from '@ngtools/webpack';
 
+import { NgcWebpackPluginOptions } from './plugin-options'
+import { MonkeyAngularCompilerPlugin } from './monkies';
+import { hasHook, withHook, isValidAngularCompilerPlugin } from './utils';
+import { WebpackResourceLoader } from './resource-loader';
 
 export class NgcWebpackPlugin {
-  public compiler: any;
-  public webpackWrapper: WebpackWrapper;
+  private ngcWebpackPluginOptions: NgcWebpackPluginOptions;
+  private angularCompilerPlugin: MonkeyAngularCompilerPlugin;
+  private valid: boolean;
 
-  private aotPass: boolean;
-  private debug = true;
+  constructor(options: NgcWebpackPluginOptions) {
+    if (options.hasOwnProperty('AOT')) {
+      if (!options.hasOwnProperty('skipCodeGeneration')) {
+        options.skipCodeGeneration = !options.AOT;
+      }
+      delete options.AOT;
+    }
 
-  constructor(public options: NgcWebpackPluginOptions = {} as any) {
-    if (!options.hasOwnProperty('disabled')) {
-      options.disabled = false;
+    this.ngcWebpackPluginOptions = options;
+    this.angularCompilerPlugin = <any> new AngularCompilerPlugin(options);
+
+    this.valid = isValidAngularCompilerPlugin(this.angularCompilerPlugin);
+    if (!this.valid) {
+      throw new Error('The "@ngtools/webpack" package installed is not compatible with this ' +
+        'version of "ngc-webpack"');
     }
   }
 
   apply(compiler: any) {
-    if (this.options.disabled === true) return;
+    if (!this.valid) {
+      return;
+    }
 
-    this.compiler = compiler;
-    this.webpackWrapper = WebpackWrapper.fromCompiler(this.compiler);
+    const ngcOptions = this.ngcWebpackPluginOptions;
+    const ngPlugin = this.angularCompilerPlugin;
+    const compilerHost = ngPlugin._compilerHost;
 
-    // if not from cli and no config file then we never have AOT pass...
-    this.aotPass = !isCli() && !this.options.tsConfig ? false : true;
-
-    compiler.plugin('run', (compiler, next) => this.run(next) );
-    compiler.plugin('watch-run', (compiler, next) => this.run(next) );
-    compiler.plugin('emit', (compilation, next) => this.emit(compilation, next) );
-
-    compiler.plugin("normal-module-factory", (nmf: any) => {
-      nmf.plugin('before-resolve', (result, callback) => this.beforeResolve(result, callback) );
-      nmf.plugin('after-resolve', (result, callback) => this.afterResolve(result, callback) );
+    withHook(ngcOptions, 'beforeRun', beforeRun => {
+      compiler.plugin('run', (compiler, next) => {
+        const webpackResourceLoader = new WebpackResourceLoader();
+        webpackResourceLoader.update(compiler.createCompilation());
+        Promise.resolve(beforeRun(webpackResourceLoader)).then(next).catch(next);
+      } );
     });
-  }
 
-  emit(compilation: any, next: (err?: Error) => any): void {
-    if (this.webpackWrapper.externalAssetsSource) {
-      const externalAssets = this.webpackWrapper.externalAssetsSource.externalAssets || {};
-      Object.keys(externalAssets).forEach( k => compilation.assets[k] = externalAssets[k] );
+    ngPlugin.apply(compiler);
+
+    if (ngcOptions.tsTransformers) {
+      if (ngcOptions.tsTransformers.before) {
+        this.angularCompilerPlugin._transformers.push(...ngcOptions.tsTransformers.before);
+      }
+      if (ngcOptions.tsTransformers.after) {
+
+      }
     }
 
-    next();
-  }
+    if (ngcOptions.readFileTransformer) {
+      const orgReadFile = compilerHost.readFile;
+      const { predicate, transform } = ngcOptions.readFileTransformer;
+      const predicateFn = typeof predicate === 'function'
+        ? predicate
+        : (fileName: string) => predicate.test(fileName)
+      ;
 
-  run(next: (err?: Error) => any): void {
-    if (this.options.tsConfig) {
-      if (this.debug) {
-        console.log('Starting compilation using the angular compiler.');
-      }
-
-      let p: Promise<void>;
-      if (typeof this.options.beforeRun === 'function') {
-        const loader = new WebpackResourceLoader(this.webpackWrapper.compiler.createCompilation(), !!this.options.resourceOverride);
-        p = this.options.beforeRun(loader);
-      } else {
-        p = Promise.resolve();
-      }
-
-      p.then( () => run(this.options.tsConfig, new NgcCliOptions(this.options.cliOptions || {}), this.webpackWrapper) )
-        .then( () => undefined ) // ensure the last then get's undefined if no error.
-        .catch(err => err)
-        .then(err => {
-          if (this.debug) {
-            console.log('Angular compilation done, starting webpack bundling.');
+      compilerHost.readFile = (fileName: string): string => {
+        if (predicateFn(fileName)) {
+          let stats = compilerHost._files[fileName];
+          if (!stats) {
+            const content = transform(fileName, orgReadFile.call(compilerHost, fileName));
+            stats = compilerHost._files[fileName];
+            if (stats) {
+              stats.content = content;
+            }
+            return content;
           }
-          this.aotPass = false;
-          next(err)
+        }
+        return orgReadFile.call(compilerHost, fileName);
+      }
+    }
+
+    if (hasHook(ngcOptions, ['resourcePathTransformer', 'resourceTransformer']).some( v => v) ) {
+      const resourceGet = compilerHost._resourceLoader.get;
+      compilerHost._resourceLoader.get = (filePath: string): Promise<string> => {
+        withHook(ngcOptions, 'resourcePathTransformer', resourcePath => {
+          filePath = ngcOptions.resourcePathTransformer(filePath);
         });
-    } else {
-      next();
-    }
-  }
 
-  beforeResolve(result: any, callback: (err: Error | null, result) => void): void {
-    if (!this.aotPass && this.options.resourceOverride && this.webpackWrapper.aotResources[Path.normalize(result.request)] === true) {
-      result.request = this.options.resourceOverride;
+        let p = resourceGet.call(compilerHost._resourceLoader, filePath);
+        withHook(ngcOptions, 'resourceTransformer', resource => {
+          p = p.then( content => Promise.resolve(resource(filePath, content)) );
+        });
+        return p;
+      }
     }
-    callback(null, result);
-  }
-
-  afterResolve(result: any, callback: (err: Error | null, result) => void): void {
-    if (!this.aotPass && this.options.resourceOverride && this.webpackWrapper.aotResources[Path.normalize(result.resource)] === true) {
-      result.resource = Path.resolve(Path.dirname(result.resource), this.options.resourceOverride);
-    }
-    callback(null, result);
   }
 }

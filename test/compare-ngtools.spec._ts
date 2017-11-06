@@ -1,10 +1,7 @@
 import * as fs from 'fs';
 import { expect } from 'chai';
 
-const rimraf = require('rimraf');
-
 import { runWebpack, resolveWebpackConfig, getTsConfigMeta, configs, logWebpackStats } from './testing/utils';
-import { resetLoader } from '../src/aot-clean-transformer/loader/text-based-loader';
 
 describe('Full Webpack build', () => {
 
@@ -22,16 +19,8 @@ describe('Full Webpack build', () => {
     ];
 
     let test = it('should compile using webpack plugin-full and match output files', async () => {
-      const transformType: 'transformer' | 'loader' = 'loader';
 
-      const tsMetaPluginFull = getTsConfigMeta(configs.pluginFull.ts);
-      const wpConfig = resolveWebpackConfig(require(configs.pluginFull.wp)(transformType));
-
-      if (transformType === 'loader') {
-        resetLoader();
-      }
-
-      rimraf.sync(tsMetaPluginFull.absGenDir);
+      const wpConfig = resolveWebpackConfig(require(configs.pluginFull.wp)(false));
 
       const stats = await runWebpack(wpConfig).done;
       logWebpackStats(stats);
@@ -41,8 +30,6 @@ describe('Full Webpack build', () => {
         expect(compileErrors.length).to.be
           .lt(1, `Expected no TypeScript errors, found ${compileErrors.length}\n` + compileErrors.map(e => e.message + '\n'));
       }
-
-      expect(fs.existsSync(tsMetaPluginFull.absGenDir));
 
       // throw new Error("Module build failed:
 
@@ -57,13 +44,10 @@ describe('Full Webpack build', () => {
     (test as any).timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 
     test = it('should compile using webpack ngtools-full and match output files (control test)', async () => {
-      const tsMetaNgtoolsFull = getTsConfigMeta(configs.ngToolsFull.ts);
-      const wpConfig = resolveWebpackConfig(require(configs.ngToolsFull.wp)());
-      rimraf.sync(tsMetaNgtoolsFull.absGenDir);
+      const wpConfig = resolveWebpackConfig(require(configs.ngToolsFull.wp)(false));
 
       const stats = await runWebpack(wpConfig).done;
       logWebpackStats(stats);
-      expect(fs.existsSync(tsMetaNgtoolsFull.absGenDir));
 
       const assets = stats.toJson().assets;
       expect(assets.length).to.equal(outputMap.length);
