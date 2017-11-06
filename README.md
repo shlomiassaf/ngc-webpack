@@ -37,7 +37,7 @@ npm install ngc-webpack -D
 ```
 
 **webpack.config.js**
-```json
+```js
 {
     module: {
         rules: [
