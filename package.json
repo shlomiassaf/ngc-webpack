@@ -1,6 +1,6 @@
 {
   "name": "ngc-webpack",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "A wrapper for the @ngtools/webpack with hooks into the compilation process",
   "author": "Shlomi Assaf <shlomiasaf@gmail.com>",
   "license": "MIT",
@@ -35,7 +35,7 @@
     "ts-node": "^3.2.0"
   },
   "peerDependencies": {
-    "@ngtools/webpack": "^5.0.0",
+    "@ngtools/webpack": "^1.8.0",
     "@angular/compiler-cli": "^5.0.0"
   },
   "devDependencies": {
