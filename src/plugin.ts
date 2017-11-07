@@ -38,11 +38,21 @@ export class NgcWebpackPlugin {
     const compilerHost = ngPlugin._compilerHost;
 
     withHook(ngcOptions, 'beforeRun', beforeRun => {
-      compiler.plugin('run', (compiler, next) => {
+      let ran = false;
+      const run = (cmp, next) => {
+        if (ran) {
+          next();
+          return;
+        }
+        // for now, run once
+        // TODO: add hook for watch mode to notify on watch-run
+        ran = true;
         const webpackResourceLoader = new WebpackResourceLoader();
         webpackResourceLoader.update(compiler.createCompilation());
         Promise.resolve(beforeRun(webpackResourceLoader)).then(next).catch(next);
-      } );
+      }
+      compiler.plugin('run', run);
+      compiler.plugin('watch-run', run);
     });
 
     ngPlugin.apply(compiler);
