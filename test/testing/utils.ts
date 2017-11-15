@@ -14,6 +14,10 @@ export const configs = {
     ts: Path.resolve('tsconfig.plugin-full.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.plugin-full.js')
   },
+  pluginLib: {
+    ts: Path.resolve('tsconfig.plugin-lib.json'),
+    wp: Path.resolve('test/testing/buildConfig/webpack.plugin-lib.js')
+  },
   ngToolsFull: {
     ts: Path.resolve('tsconfig.ngtools-full.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.ngtools-full.js')

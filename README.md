@@ -174,8 +174,17 @@ export interface NgcWebpackPluginOptions extends AngularCompilerPluginOptions {
 }
 ```
 
-## Patching `@angular/compiler-cli`:
-The `compiler-cli` (version 5.0.0) comes with a new feature called
+## Patching `@ngtools/webpack` (flatModule fix):
+The `@ngtools/webpack` (version 5.0.1) contains a bug in it's `CompilerHost` class that does allow to run the compiler-cli
+with the **flatModule** feature (i.e setting `flatModuleOutFile` and `flatModuleId` in tsconfig.angularCompilerOptions)
+
+To workaround that, import the patch at the top of your webpack config module:
+```js
+    require('ngc-webpack/src/patch-ngtools-compiler-host-for-flat-module');
+```
+
+## Patching `@angular/compiler-cli` (disableExpressionLowering fix):
+The `compiler-cli` (version 5.0.1) comes with a new feature called
 **lowering expressions** which basically means we can now use arrow
 functions in decorator metadata (usually provider metadata)
 

@@ -1,6 +1,6 @@
 {
   "name": "ngc-webpack",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "A wrapper for the @ngtools/webpack with hooks into the compilation process",
   "author": "Shlomi Assaf <shlomiasaf@gmail.com>",
   "license": "MIT",
@@ -35,21 +35,21 @@
     "ts-node": "^3.2.0"
   },
   "peerDependencies": {
-    "@ngtools/webpack": "^1.8.0",
-    "@angular/compiler-cli": "^5.0.0"
+    "@angular/compiler-cli": "^5.0.0",
+    "@ngtools/webpack": "^1.8.0"
   },
   "devDependencies": {
     "@angular-devkit/build-optimizer": "^0.0.32",
     "@angular/cli": "^1.5.0",
-    "@angular/common": "5.0.0",
-    "@angular/compiler": "5.0.0",
+    "@angular/common": "^5.0.0",
+    "@angular/compiler": "^5.0.0",
     "@angular/compiler-cli": "^5.0.0",
-    "@angular/core": "5.0.0",
-    "@angular/forms": "5.0.0",
-    "@angular/http": "5.0.0",
-    "@angular/platform-browser": "5.0.0",
-    "@angular/platform-browser-dynamic": "5.0.0",
-    "@angular/router": "5.0.0",
+    "@angular/core": "^5.0.0",
+    "@angular/forms": "^5.0.0",
+    "@angular/http": "^5.0.0",
+    "@angular/platform-browser": "^5.0.0",
+    "@angular/platform-browser-dynamic": "^5.0.0",
+    "@angular/router": "^5.0.0",
     "@ngtools/webpack": "^1.8.0",
     "@types/chai": "^3.4.34",
     "@types/fs-extra": "^4.0.3",
