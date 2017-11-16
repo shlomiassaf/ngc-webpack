@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 
-import { NgcWebpackPluginOptions } from '../src/plugin-options';
+import { NgcWebpackPluginOptions } from 'ngc-webpack';
 import { runWebpack, resolveWebpackConfig, configs, logWebpackStats } from './testing/utils';
 
-type UniqueNgcOptions = Pick<NgcWebpackPluginOptions,
-  'beforeRun' | 'readFileTransformer' | 'resourcePathTransformer' | 'resourceTransformer' | 'tsTransformers'>;
+type UniqueNgcOptions = Partial<Pick<NgcWebpackPluginOptions,
+  'beforeRun' | 'readFileTransformer' | 'resourcePathTransformer' | 'resourceTransformer' | 'tsTransformers'>>;
 
 
 describe('patch-angular-compiler-cli', function() {

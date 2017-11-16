@@ -1,10 +1,23 @@
+import * as Path from 'path';
+import * as rimraf from 'rimraf';
 import { expect } from 'chai';
 
 import { runWebpack, resolveWebpackConfig, configs, logWebpackStats } from './testing/utils';
-import 'ngc-webpack/src/patch-ngtools-compiler-host-for-flat-module';
+import { runCli } from 'ngc-webpack';
+
+const tsConfig = require(configs.pluginLib.ts);
+
+function delOutDir() {
+  if (tsConfig.compilerOptions.outDir) {
+    // TODO: make sure outDir is not current dir
+    const outDir = Path.resolve(configs.pluginLib.ts, tsConfig.compilerOptions.outDir);
+    rimraf.sync(outDir);
+  }
+}
 
 
-describe('ngc-webpack library usage', function() {
+
+describe('ngc-webpack CLI', function() {
   this.timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
   
   const run = async (wpConfig) => {
@@ -19,10 +32,13 @@ describe('ngc-webpack library usage', function() {
     return stats.toJson().assets;
   };
 
-  it('should run with library config', async () => {
+  it('CLI With flat module output', async () => {
+    delOutDir();
+
 
     const config = require(configs.pluginLib.wp)(true);
-    await run(config);
+
+    await runCli(config,[], { _: [] });
   });
 
 });

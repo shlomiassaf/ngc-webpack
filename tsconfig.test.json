@@ -1,4 +1,5 @@
 {
+  "extends": "tsconfig.json",
   "compilerOptions": {
     "module": "commonjs",
     "target": "es5",
@@ -25,7 +26,8 @@
   },
   "include": [
     "index.ts",
-    "src/**/*"
+    "src/**/*",
+    "test/**/*"
   ],
   "exclude": [
     "node_modules",

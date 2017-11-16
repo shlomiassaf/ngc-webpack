@@ -25,7 +25,7 @@
     "annotateForClosureCompiler": true,
     "skipMetadataEmit": false,
     "skipTemplateCodegen": true,
-    "generateCodeForLibraries": false,
+    "strictMetadataEmit": true
     "flatModuleOutFile": "my-lib.ng-flat.js",
     "flatModuleId": "my-lib"
   },

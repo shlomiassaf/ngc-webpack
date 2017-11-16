@@ -7,7 +7,7 @@ import { isSyntaxError } from '@angular/compiler';
 import { Program, CompilerHost, CompilerOptions, TsEmitCallback, CustomTransformers, PerformCompilationResult, createCompilerHost, createProgram, Diagnostic, Diagnostics, EmitFlags, DEFAULT_ERROR_CODE, UNKNOWN_ERROR_CODE, SOURCE } from '@angular/compiler-cli';
 
 export function performCompilationAsync({rootNames, options, host, oldProgram, emitCallback,
-                                     gatherDiagnostics = defaultGatherDiagnostics,
+                                     gatherDiagnostics = asyncDiagnostics,
                                      customTransformers, emitFlags = EmitFlags.Default}: {
   rootNames: string[],
   options: CompilerOptions,
@@ -21,6 +21,12 @@ export function performCompilationAsync({rootNames, options, host, oldProgram, e
   let program: Program | undefined;
   let emitResult: ts.EmitResult|undefined;
   let allDiagnostics: Diagnostics = [];
+
+  if (options.skipTemplateCodegen) {
+    // must set this or resources (async) will not read.
+    options.fullTemplateTypeCheck = true;
+  }
+
   return Promise.resolve()
     .then( () => {
       if (!host) {
@@ -62,6 +68,44 @@ export function performCompilationAsync({rootNames, options, host, oldProgram, e
         {category: ts.DiagnosticCategory.Error, messageText: errMsg, code, source: SOURCE});
       return {diagnostics: allDiagnostics, program};
     })
+}
+
+
+function asyncDiagnostics(angularProgram: Program): Diagnostics {
+  const allDiagnostics: Diagnostics = [];
+
+  // Check Angular structural diagnostics.
+  allDiagnostics.push(...angularProgram.getNgStructuralDiagnostics());
+
+  // Check TypeScript parameter diagnostics.
+  allDiagnostics.push(...angularProgram.getTsOptionDiagnostics());
+
+  // Check Angular parameter diagnostics.
+  allDiagnostics.push(...angularProgram.getNgOptionDiagnostics());
+
+
+  function checkDiagnostics(diags: Diagnostics | undefined) {
+    if (diags) {
+      allDiagnostics.push(...diags);
+      return !hasErrors(diags);
+    }
+    return true;
+  }
+
+  let checkOtherDiagnostics = true;
+  // Check TypeScript syntactic diagnostics.
+  checkOtherDiagnostics = checkOtherDiagnostics &&
+    checkDiagnostics(angularProgram.getTsSyntacticDiagnostics(undefined));
+
+  // Check TypeScript semantic and Angular structure diagnostics.
+  checkOtherDiagnostics = checkOtherDiagnostics &&
+    checkDiagnostics(angularProgram.getTsSemanticDiagnostics(undefined));
+
+  // Check Angular semantic diagnostics
+  checkOtherDiagnostics = checkOtherDiagnostics &&
+    checkDiagnostics(angularProgram.getNgSemanticDiagnostics(undefined));
+
+  return allDiagnostics;
 }
 
 function defaultGatherDiagnostics(program: Program): Diagnostics {
