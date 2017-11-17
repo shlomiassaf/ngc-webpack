@@ -33,7 +33,15 @@ module.exports = function (aot, ngcWebpackUniqueOptions) {
             rules: [
                 {
                     test: /(?:\.ngfactory\.js|\.ngstyle\.js|\.ts)$/,
-                    use: [ '@ngtools/webpack' ]
+                    use: [
+                        {
+                            loader: '@angular-devkit/build-optimizer/webpack-loader',
+                            options: {
+                                sourceMap: false
+                            }
+                        },
+                        '@ngtools/webpack'
+                    ]
                 },
                 {
                     test: /\.html$/,
@@ -55,7 +63,7 @@ module.exports = function (aot, ngcWebpackUniqueOptions) {
                 tsConfigPath: './tsconfig.plugin-lib.json',
                 mainPath: 'test/ng-lib/src/index.ts',
                 // we must pass an entry module because the main path has not bootstrap that compiler can detect.
-                entryModule: 'test/ng-lib/src/lib-module.module.ts'
+                entryModule: 'test/ng-lib/src/lib-module.module.ts#MyLibraryModule'
             })),
             new PurifyPlugin(),
         ],

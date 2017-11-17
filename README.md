@@ -174,6 +174,23 @@ export interface NgcWebpackPluginOptions extends AngularCompilerPluginOptions {
 }
 ```
 
+## Library compilation mode (CLI):
+Library compilation mode is a special mode in which webpack is used to compile resources (templateUrl, styleUrls)
+but does not output a bundle.
+
+An output is emitted from the AOT compiler similar to using `tsc`.
+Each `ts` files get's a transpiled `js` files and optional AOT artifacts such as `metadata.json`, `ngfactory` etc...
+
+The output is controlled by the `tsconfig` supplied.
+
+`ngc-webpack` will inline all resources to both `metadata.json` files and `js` source code.
+If `skipTemplateCodegen` is set to **false** the compiler will emit source code for all resource in dedicated modules
+and so `ngc-webpack` will not perform the inline operation.
+
+`ngc-webpack` comes with a cli executable `ngc-w`.
+
+
+
 ## Patching `@ngtools/webpack` (flatModule fix):
 The `@ngtools/webpack` (version 5.0.1) contains a bug in it's `CompilerHost` class that does allow to run the compiler-cli
 with the **flatModule** feature (i.e setting `flatModuleOutFile` and `flatModuleId` in tsconfig.angularCompilerOptions)

@@ -51,6 +51,8 @@ function createCliExecutionHostFactory(config: NgcParsedConfiguration): {
       const ctx = createCliContext(config);
       const { compilerHost } = ctx;
 
+      const inline = config.options.skipTemplateCodegen;
+
       return {
         execute(compiler: any): void {
           const compilation = ctx.createCompilation(compiler);
@@ -64,22 +66,16 @@ function createCliExecutionHostFactory(config: NgcParsedConfiguration): {
                 The compiler host "writeFile" is wrapped with a handler that will
                 inline all resources into metadata modules (non flat bundle modules)
              */
-            host: Object.create(compilerHost, {
-              writeFile: {
-                value: (fileName: string, data: string, ...args: any[]): void => {
-                  if (/\.metadata\.json$/.test(fileName)) {
-                    data = ctx.inlineMetadataModule(fileName, data);
-                  }
-                  return compilerHost.writeFile(fileName, data, args[0], args[1], args[2]);
-                }
-              }
-            }),
+            host: (inline && !config.options.skipMetadataEmit && !config.options.flatModuleOutFile)
+              ? ctx.resourceInliningCompilerHost()
+              : compilerHost
+            ,
             emitFlags: config.emitFlags,
             // we use the compiler-cli emit callback but we wrap it so we can create a map of source file path to
             // output file path
             emitCallback: ctx.emitCallback,
             customTransformers: {
-              beforeTs: [ ctx.createInlineResourcesTransformer() ]
+              beforeTs: inline ? [ ctx.createInlineResourcesTransformer() ] : []
             }
           })
             .then( result => {
@@ -90,7 +86,7 @@ function createCliExecutionHostFactory(config: NgcParsedConfiguration): {
               }
 
               // inline resources into the flat metadata json file, if exists.
-              if (config.options.flatModuleOutFile) {
+              if (compilation.errors.length === 0 && config.options.flatModuleOutFile) {
                 // TODO: check that it exists, config.rootNames should not have it (i.e. it was added to rootNames)
                 const flatModulePath = rootNames[rootNames.length - 1];
                 ctx.inlineFlatModuleMetadataBundle(Path.dirname(flatModulePath), config.options.flatModuleOutFile);
@@ -106,7 +102,6 @@ function createCliExecutionHostFactory(config: NgcParsedConfiguration): {
     }
   }
 }
-
 
 export function runCli(webpackConfig: string | webpack.Configuration, args: string[], parsedArgs: ParsedArgs): Promise<ParsedDiagnostics> {
   return Promise.resolve<null>(null)
@@ -142,14 +137,14 @@ export function runCli(webpackConfig: string | webpack.Configuration, args: stri
         return parseDiagnostics(config.errors, /*options*/ undefined);
       }
 
-      const wrapper = createCliExecutionHostFactory(config);
-      const plugin = NgcWebpackPlugin.clone(configModule.plugins[pluginIdx], wrapper.createCliExecutionHost);
+      const { compilationResult, createCliExecutionHost: executionHostFactory } = createCliExecutionHostFactory(config);
+      const plugin = NgcWebpackPlugin.clone(configModule.plugins[pluginIdx], { executionHostFactory });
       configModule.plugins.splice(pluginIdx, 1);
 
       const compiler = webpack(configModule);
       plugin.apply(compiler);
 
-      return wrapper.compilationResult
+      return compilationResult
     });
 
 }

@@ -1,5 +1,5 @@
 {
-  "extends": "tsconfig.json",
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "commonjs",
     "target": "es5",
@@ -11,18 +11,7 @@
     "outDir": "dist",
     "noEmitOnError": true,
     "moduleResolution": "node",
-    "skipLibCheck": true,
-    "baseUrl": "./",
-    "paths": {
-      "ngc-webpack": [
-        "dist/index.js",
-        "./index.ts"
-      ],
-      "ngc-webpack/*": [
-        "dist/*",
-        "*"
-      ]
-    }
+    "skipLibCheck": true
   },
   "include": [
     "index.ts",

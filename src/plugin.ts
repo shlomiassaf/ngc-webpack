@@ -2,7 +2,7 @@ import * as ts from 'typescript';
 import { AngularCompilerPlugin } from '@ngtools/webpack';
 
 import { NgcWebpackPluginOptions } from './plugin-options'
-import { hasHook, withHook, isValidAngularCompilerPlugin } from './utils';
+import { hasHook, isValidAngularCompilerPlugin } from './utils';
 import { WebpackResourceLoader } from './resource-loader';
 import { MonkeyAngularCompilerPlugin, MonkeyWebpackCompilerHost } from './monkies';
 
@@ -28,13 +28,14 @@ export function createAngularCompilerPluginExecutionHost(options: NgcWebpackPlug
       'version of "ngc-webpack"');
   }
 
-  const properties: Partial<Record<keyof NgcCompilerHost, PropertyDescriptor>> = {
-    resourceLoader: {
-      get: function() { return this._resourceLoader }
-    }
-  };
+  // we must use the base instance because AngularCompilerPlugin use it.
+  const compilerHost = ngPlugin._compilerHost;
 
-  const compilerHost = Object.create(ngPlugin._compilerHost, properties);
+  Object.defineProperty(compilerHost, 'resourceLoader', {
+    get: function(this: MonkeyWebpackCompilerHost) {
+      return this._resourceLoader;
+    }
+  });
 
   return {
     execute(compiler: any): void {
@@ -51,20 +52,22 @@ export function createAngularCompilerPluginExecutionHost(options: NgcWebpackPlug
           : (fileName: string) => predicate.test(fileName)
         ;
 
-        compilerHost.readFile = (fileName: string): string => {
-          if (predicateFn(fileName)) {
-            let stats = ngPlugin._compilerHost._files[fileName];
-            if (!stats) {
-              const content = transform(fileName, orgReadFile.call(compilerHost, fileName));
-              stats = ngPlugin._compilerHost._files[fileName];
-              if (stats) {
-                stats.content = content;
+        Object.defineProperty(compilerHost, 'readFile', {
+          value: function(this: MonkeyWebpackCompilerHost, fileName: string): string {
+            if (predicateFn(fileName)) {
+              let stats = compilerHost._files[fileName];
+              if (!stats) {
+                const content = transform(fileName, orgReadFile.call(compilerHost, fileName));
+                stats = compilerHost._files[fileName];
+                if (stats) {
+                  stats.content = content;
+                }
+                return content;
               }
-              return content;
             }
+            return orgReadFile.call(compilerHost, fileName);
           }
-          return orgReadFile.call(compilerHost, fileName);
-        }
+        });
       }
     }
   }
@@ -96,7 +99,17 @@ export class NgcWebpackPlugin {
     const executionHost = this.executionHostFactory(this.ngcWebpackPluginOptions);
     const compilerHost = executionHost.compilerHost;
 
-    withHook(ngcOptions, 'beforeRun', beforeRun => {
+    const executeHook = <K extends keyof NgcWebpackPluginOptions>(key: K, defaultHook: (opt: NgcWebpackPluginOptions[K]) => void) => {
+      if (ngcOptions[key]) {
+        if (executionHost.hookOverride && executionHost.hookOverride[key]) {
+          executionHost.hookOverride[key](ngcOptions[key]);
+        } else {
+          defaultHook(ngcOptions[key]);
+        }
+      }
+    };
+
+    executeHook('beforeRun', beforeRun => {
       let ran = false;
       const run = (cmp, next) => {
         if (ran) {
@@ -114,26 +127,21 @@ export class NgcWebpackPlugin {
       compiler.plugin('watch-run', run);
     });
 
-    if (ngcOptions.readFileTransformer) {
-      if (executionHost.hookOverride && executionHost.hookOverride.readFileTransformer) {
-        executionHost.hookOverride.readFileTransformer(ngcOptions.readFileTransformer);
-      } else {
-        const orgReadFile = compilerHost.readFile;
-        const { predicate, transform } = ngcOptions.readFileTransformer;
-        const predicateFn = typeof predicate === 'function'
-          ? predicate
-          : (fileName: string) => predicate.test(fileName)
-        ;
+    executeHook('readFileTransformer', opt => {
+      const orgReadFile = compilerHost.readFile;
+      const { predicate, transform } = ngcOptions.readFileTransformer;
+      const predicateFn = typeof predicate === 'function'
+        ? predicate
+        : (fileName: string) => predicate.test(fileName)
+      ;
 
-        compilerHost.readFile = (fileName: string): string => {
+      Object.defineProperty(compilerHost, 'readFile', {
+        value: function(this: MonkeyWebpackCompilerHost, fileName: string): string {
           const readFileResponse = orgReadFile.call(compilerHost, fileName);
-          return predicateFn(fileName)
-            ? transform(fileName, readFileResponse)
-            : readFileResponse
-            ;
+          return predicateFn(fileName) ? transform(fileName, readFileResponse) : readFileResponse;
         }
-      }
-    }
+      });
+    });
 
     if (ngcOptions.tsTransformers) {
       if (ngcOptions.tsTransformers.before) {
@@ -147,14 +155,15 @@ export class NgcWebpackPlugin {
     if (hasHook(ngcOptions, ['resourcePathTransformer', 'resourceTransformer']).some( v => v) ) {
       const resourceGet = compilerHost.resourceLoader.get;
       compilerHost.resourceLoader.get = (filePath: string): Promise<string> => {
-        withHook(ngcOptions, 'resourcePathTransformer', resourcePath => {
-          filePath = ngcOptions.resourcePathTransformer(filePath);
-        });
+        executeHook('resourcePathTransformer', pathTransformer => filePath = pathTransformer(filePath));
 
         let p = resourceGet.call(compilerHost.resourceLoader, filePath);
-        withHook(ngcOptions, 'resourceTransformer', resource => {
-          p = p.then( content => Promise.resolve(resource(filePath, content)) );
-        });
+
+        executeHook(
+          'resourceTransformer',
+          resourceTransformer => p = p.then( content => Promise.resolve(resourceTransformer(filePath, content)) )
+        );
+
         return p;
       }
     }
@@ -163,7 +172,12 @@ export class NgcWebpackPlugin {
   }
 
   static clone(plugin: NgcWebpackPlugin,
-               executionHostFactory?: (options: NgcWebpackPluginOptions) => NgcCompilerExecutionHost): NgcWebpackPlugin {
-    return new NgcWebpackPlugin(plugin.ngcWebpackPluginOptions, executionHostFactory || plugin.executionHostFactory);
+               overwrite: {
+                 options?: Partial<NgcWebpackPluginOptions>,
+                 executionHostFactory?: (options: NgcWebpackPluginOptions) => NgcCompilerExecutionHost
+               }): NgcWebpackPlugin {
+    const options = Object.assign({}, plugin.ngcWebpackPluginOptions, overwrite.options || {});
+    const executionHostFactory = overwrite.executionHostFactory || plugin.executionHostFactory;
+    return new NgcWebpackPlugin(options, executionHostFactory);
   }
 }

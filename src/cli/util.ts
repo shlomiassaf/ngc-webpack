@@ -126,8 +126,8 @@ export function createSrcToOutPathMapper(outDir: string | undefined,
       i++;
     const rootDir = srcDirParts.slice(0, srcDirParts.length - i).join('/');
     srcToOutPath = (srcFileName, reverse?) => reverse
-      ? host.resolve(outDir, host.relative(rootDir, srcFileName))
-      : host.resolve(rootDir, host.relative(outDir, srcFileName))
+      ? host.resolve(rootDir, host.relative(outDir, srcFileName))
+      : host.resolve(outDir, host.relative(rootDir, srcFileName))
     ;
   } else {
     srcToOutPath = (srcFileName) => srcFileName;

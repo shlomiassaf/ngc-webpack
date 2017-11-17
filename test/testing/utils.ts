@@ -149,6 +149,17 @@ export function pretty (size, nospace?, one?, places?) {
   return mysize;
 }
 
+export function writeFile(fileName: string, data: string) {
+  return new Promise<void>((resolve, reject) => {
+    fs.writeFile(fileName, data,{encoding: 'utf-8'}, (err: any) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
 
 export function readFile(fileName: string) {
   return new Promise<string>((resolve, reject) => {

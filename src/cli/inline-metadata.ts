@@ -2,8 +2,11 @@ import * as Path from 'path';
 
 import { Component } from '@angular/core';
 import {
-  ModuleMetadata, isClassMetadata, isMetadataSymbolicCallExpression,
-  isMetadataImportedSymbolReferenceExpression, MetadataSymbolicCallExpression, MetadataValue
+  ModuleMetadata,
+  MetadataSymbolicCallExpression,
+  isClassMetadata,
+  isMetadataSymbolicCallExpression,
+  isMetadataImportedSymbolReferenceExpression
 } from '@angular/compiler-cli';
 
 

@@ -11,7 +11,7 @@
     "noEmitHelpers": true,
     "strictNullChecks": false,
     "baseUrl": ".",
-    "rootDir": ".",
+    "rootDir": "./test",
     "outDir": "./dist/test/ng-lib-plugin",
     "lib": [
       "es2015",
@@ -20,14 +20,6 @@
     "types": [
       "node"
     ]
-  },
-  "angularCompilerOptions": {
-    "annotateForClosureCompiler": true,
-    "skipMetadataEmit": false,
-    "skipTemplateCodegen": true,
-    "strictMetadataEmit": true
-    "flatModuleOutFile": "my-lib.ng-flat.js",
-    "flatModuleId": "my-lib"
   },
   "files": [
     "test/ng-lib/src/index.ts"

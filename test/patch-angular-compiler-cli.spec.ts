@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { NgcWebpackPluginOptions } from 'ngc-webpack';
+import { NgcWebpackPluginOptions } from '..';
 import { runWebpack, resolveWebpackConfig, configs, logWebpackStats } from './testing/utils';
 
 type UniqueNgcOptions = Partial<Pick<NgcWebpackPluginOptions,
@@ -52,7 +52,12 @@ export class MyClass {
   it('should not throw when using specific expression with lowering expression on and a patch in place', async () => {
     const lowerExpressions = require('@angular/compiler-cli/src/transformers/lower_expressions');
     const getExpressionLoweringTransformFactory = lowerExpressions.getExpressionLoweringTransformFactory;
-    require('../src/patch-angular-compiler-cli');
+
+    try {
+      require('../dist/patch-angular-compiler-cli');
+    } catch (e) {
+      require('../src/patch-angular-compiler-cli');
+    }
 
     const ngcOptions: UniqueNgcOptions = {
       readFileTransformer: {
