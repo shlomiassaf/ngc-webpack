@@ -1,6 +1,6 @@
 {
   "name": "ngc-webpack",
-  "version": "4.0.3",
+  "version": "4.1.0",
   "description": "A wrapper for the @ngtools/webpack with hooks into the compilation process",
   "author": "Shlomi Assaf <shlomiasaf@gmail.com>",
   "license": "MIT",
