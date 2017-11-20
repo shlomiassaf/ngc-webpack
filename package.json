@@ -10,7 +10,7 @@
   },
   "main": "index.js",
   "bin": {
-    "ngc-w": "src/cli.js"
+    "ngc-w": "src/cli/cli.js"
   },
   "typings": "index.d.ts",
   "keywords": [
