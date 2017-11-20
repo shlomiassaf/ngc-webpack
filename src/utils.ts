@@ -11,12 +11,6 @@ export function hasHook(options: NgcOptions, name: keyof NgcOptions | Array<keyo
   }
 }
 
-export function withHook<P extends keyof NgcOptions>(options: NgcOptions,
-                                                     name: P,
-                                                     run: (hook: NgcOptions[P]) => void): void {
-  hasHook(options, name) && run(options[name]);
-}
-
 export function isValidAngularCompilerPlugin(instance: MonkeyAngularCompilerPlugin): boolean {
   return validators.every( m => m(instance) );
 }

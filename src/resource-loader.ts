@@ -1,4 +1,9 @@
 export let WebpackResourceLoader: { new (): any; get(filename: string): Promise<string>; };
+export type WebpackResourceLoader = {
+  new (): any; get(filename: string): Promise<string>;
+  update(parentCompilation: any): void;
+  getResourceDependencies(filePath: string): string[];
+};
 
 try {
   setFromNgTools();

@@ -41,7 +41,7 @@ describe('@ngtools baseline', function() {
       const compileErrors = stats['compilation'] && stats['compilation'].errors;
       if (compileErrors) {
         expect(compileErrors.length).to.be
-          .lt(1, `Expected no TypeScript errors, found ${compileErrors.length}\n` + compileErrors.map(e => e.message + '\n'));
+          .lt(1, `Expected no TypeScript errors, found ${compileErrors.length}\n` + compileErrors.map(e => (e.message || e) + '\n'));
       }
       const assets = stats.toJson().assets;
       expect(assets.length).to.equal(outputMap.length);

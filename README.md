@@ -1,9 +1,19 @@
 [![Build Status](https://travis-ci.org/shlomiassaf/ngc-webpack.svg?branch=master)](https://travis-ci.org/shlomiassaf/ngc-webpack)
 
 # ngc-webpack
-[@ngtools/webpack](https://github.com/angular/angular-cli/tree/master/packages/%40ngtools/webpack) wrapper with hooks into the compilation process
+[@ngtools/webpack](https://github.com/angular/angular-cli/tree/master/packages/%40ngtools/webpack) wrapper with hooks into
+the compilation process and library mode compilation support.
 
-### Background:
+ - [Background](#background)
+ - [Porting to/from `@ngtools/webpack](#porting)
+ - [Usage](#usage)
+   - [Advanced AOT production builds](#advanced-aot-production-builds)
+   - [Options](#ngcwebpackpluginoptions)
+ - [Library compilation mode (CLI)](#LIBRARY_MODE.md)
+ - [Optional Patching](#optional-patching)
+
+
+## Background:
 `ngc-webpack` started as a wrapper for `@angular/compiler-cli` when angular
 build tools were limited.
 
@@ -31,7 +41,18 @@ The implications are:
   - Using a custom typescript loader is no longer supported, you need to
     use the loader provided with `@ngtools/webpack` (for JIT see Using custom TypeScript loaders)
 
-### Usage:
+## <a name="porting">Porting to/from `@ngtools/webpack
+Using `ngc-webpack` as a proxy to `@ngtools/webpack` is safe and allows
+quick and transparent porting between the libraries.
+
+In fact, if you use `ngc-webpack` without using it's extensibility
+features you probably better of using `@ngtools/webpack` directly instead.
+
+When using `ngc-webpack` features, including library compilation mode,
+you should be aware that `ngc-webpack` is using experimental angular APIs
+as well as internal implementation of angular code to allow extensibility.
+
+## Usage:
 ```bash
 npm install ngc-webpack -D
 ```
@@ -101,7 +122,7 @@ for compilation, the `@angular/cli` uses them but with a lot more loaders/plugin
 
 For more information about setting up the plugin see [@ngtools/webpack](https://github.com/angular/angular-cli/tree/master/packages/%40ngtools/webpack)
 
-## NgcWebpackPluginOptions:
+### NgcWebpackPluginOptions:
 The plugin accepts an options object of type `NgcWebpackPluginOptions`.
 
 `NgcWebpackPluginOptions` extends [AngularCompilerPluginOptions](https://github.com/angular/angular-cli/blob/master/packages/%40ngtools/webpack/src/plugin.ts) so
@@ -174,8 +195,14 @@ export interface NgcWebpackPluginOptions extends AngularCompilerPluginOptions {
 }
 ```
 
-## Patching `@angular/compiler-cli`:
-The `compiler-cli` (version 5.0.0) comes with a new feature called
+## Optional Patching:
+`ngc-webpack` comes with optional patches to angular, these are workarounds
+to existing issue that will probably get fixed in the future making the patch
+obsolete. Patch's address specific use case so make sure you apply them only
+if required.
+
+### `disableExpressionLowering` fix (`@angular/compiler-cli`):
+The `compiler-cli` (version 5.0.1) comes with a new feature called
 **lowering expressions** which basically means we can now use arrow
 functions in decorator metadata (usually provider metadata)
 

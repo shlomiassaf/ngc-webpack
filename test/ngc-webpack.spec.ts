@@ -1,11 +1,11 @@
 import * as Path from 'path';
 import { expect } from 'chai';
 
-import { NgcWebpackPluginOptions } from '../src/plugin-options';
+import { NgcWebpackPluginOptions } from 'ngc-webpack';
 import { runWebpack, resolveWebpackConfig, configs, logWebpackStats, readFile, expectFileToMatch } from './testing/utils';
 
-type UniqueNgcOptions = Pick<NgcWebpackPluginOptions,
-  'beforeRun' | 'readFileTransformer' | 'resourcePathTransformer' | 'resourceTransformer' | 'tsTransformers'>;
+type UniqueNgcOptions = Partial<Pick<NgcWebpackPluginOptions,
+  'beforeRun' | 'readFileTransformer' | 'resourcePathTransformer' | 'resourceTransformer' | 'tsTransformers'>>;
 
 describe('ngc-webpack features', function() {
   this.timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.

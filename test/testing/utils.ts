@@ -14,6 +14,10 @@ export const configs = {
     ts: Path.resolve('tsconfig.plugin-full.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.plugin-full.js')
   },
+  pluginLib: {
+    ts: Path.resolve('tsconfig.plugin-lib.json'),
+    wp: Path.resolve('test/testing/buildConfig/webpack.plugin-lib.js')
+  },
   ngToolsFull: {
     ts: Path.resolve('tsconfig.ngtools-full.json'),
     wp: Path.resolve('test/testing/buildConfig/webpack.ngtools-full.js')
@@ -145,6 +149,17 @@ export function pretty (size, nospace?, one?, places?) {
   return mysize;
 }
 
+export function writeFile(fileName: string, data: string) {
+  return new Promise<void>((resolve, reject) => {
+    fs.writeFile(fileName, data,{encoding: 'utf-8'}, (err: any) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
 
 export function readFile(fileName: string) {
   return new Promise<string>((resolve, reject) => {
