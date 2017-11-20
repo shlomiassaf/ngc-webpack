@@ -37,7 +37,11 @@ export function parseDiagnostics(allDiagnostics: Diagnostics,
   return result;
 }
 
-export function createEmitCallback(options: CompilerOptions): TsEmitCallback | undefined {
+export const defaultEmitCallback: TsEmitCallback =
+  ({program, targetSourceFile, writeFile, cancellationToken, emitOnlyDtsFiles, customTransformers}) =>
+    program.emit(targetSourceFile, writeFile, cancellationToken, emitOnlyDtsFiles, customTransformers);
+
+export function createTsickleEmitCallback(options: CompilerOptions): TsEmitCallback | undefined {
   const transformDecorators = options.annotationsAs !== 'decorators';
   const transformTypesToClosure = options.annotateForClosureCompiler;
   if (!transformDecorators && !transformTypesToClosure) {

@@ -10,7 +10,6 @@
     "outDir": "./dist/test/ng-app-ngtools-full-tsc-out",
     "noEmitHelpers": true,
     "strictNullChecks": false,
-    "baseUrl": ".",
     "lib": [
       "es2015",
       "dom"
@@ -19,9 +18,13 @@
       "node"
     ]
   },
+  "include": [
+    "test/ng-app/**/*"
+  ],
   "exclude": [
     "node_modules",
     "dist",
+    "src",
     "test/testing",
     "test/*.spec.ts"
   ]

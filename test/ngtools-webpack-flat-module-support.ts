@@ -22,7 +22,7 @@ async function createTempTsConfig(transform: ((config) => any) = cfg => cfg): Pr
   return tmpTsConfig;
 }
 
-describe('patch-ngtools-compiler-host-for-flat-module', function() {
+describe('@ngtools/webpack flat module support', function() {
   this.timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
   
   const run = async (wpConfig) => {
@@ -32,7 +32,7 @@ describe('patch-ngtools-compiler-host-for-flat-module', function() {
   };
 
 
-  it('should throw when trying to output with flatModule and no patch applied', async () => {
+  it('should throw when trying to output with flatModule', async () => {
 
     const tmpTsConfig = await createTempTsConfig( config => {
       return Object.assign(config, {
@@ -68,23 +68,5 @@ describe('patch-ngtools-compiler-host-for-flat-module', function() {
     );
   });
 
-  it('should not throw when when trying to output with flatModule and a patch in place', async () => {
-    const WebpackCompilerHost = require('@ngtools/webpack/src/compiler_host').WebpackCompilerHost;
-    const writeFilePropertyDescriptor = Object.getOwnPropertyDescriptor(WebpackCompilerHost.prototype, 'writeFile');
-
-    try {
-      require('../dist/patch-ngtools-compiler-host-for-flat-module');
-    } catch (e) {
-      require('../src/patch-ngtools-compiler-host-for-flat-module');
-    }
-
-    const config = require(configs.pluginLib.wp)(true);
-    const stats = await run(config);
-    const compileErrors = stats['compilation'] && stats['compilation'].errors;
-
-    Object.defineProperty(WebpackCompilerHost.prototype, 'writeFile', writeFilePropertyDescriptor);
-
-    expect(compileErrors.length).to.eq(0);
-  });
 });
 

@@ -6,7 +6,7 @@ import { TsEmitArguments } from '@angular/compiler-cli';
 import { WebpackResourceLoader } from '../resource-loader';
 
 import { NgcParsedConfiguration } from './config';
-import { createEmitCallback, createSrcToOutPathMapper } from './util';
+import { createTsickleEmitCallback, defaultEmitCallback, createSrcToOutPathMapper } from './util';
 import { CliCompilerHost } from './cli-compiler-host';
 import { inlineResources } from './transformers/inline-resources';
 import { inlineMetadataBundle } from './inline-metadata';
@@ -16,7 +16,7 @@ export function createCliContext(config: NgcParsedConfiguration) {
 
   const compilerHost = new CliCompilerHost(config.options, new WebpackResourceLoader());
   const getResource = (resourcePath: string): string | undefined => compilerHost.getResource(resourcePath);
-  const realEmitCallback = createEmitCallback(config.options);
+  const realEmitCallback = createTsickleEmitCallback(config.options); // defaultEmitCallback;
 
 
   const inlineMetadataModule = (fileName: string, data: string): string => {

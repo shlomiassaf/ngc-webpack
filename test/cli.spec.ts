@@ -36,18 +36,6 @@ async function createTempTsConfig(transform: ((config) => any) = cfg => cfg): Pr
 describe('ngc-webpack CLI', function() {
   this.timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 
-  const run = async (wpConfig) => {
-    const stats = await runWebpack(resolveWebpackConfig(wpConfig)).done;
-    logWebpackStats(stats);
-
-    const compileErrors = stats['compilation'] && stats['compilation'].errors;
-    if (compileErrors) {
-      expect(compileErrors.length).to.be
-        .lt(1, `Expected no TypeScript errors, found ${compileErrors.length}\n` + compileErrors.map(e => (e.message || e) + '\n'));
-    }
-    return stats.toJson().assets;
-  };
-
   it('CLI With flat module output', async () => {
     const flatOutDir = outDir + '-flat';
     delOutDir(flatOutDir);

@@ -48,10 +48,44 @@ function createCliExecutionHostFactory(config: NgcParsedConfiguration): {
   return {
     compilationResult: pWrap.promise,
     createCliExecutionHost: (options: NgcWebpackPluginOptions): NgcCompilerExecutionHost => {
+      const inline = config.options.skipTemplateCodegen;
+      if (config.options.skipTemplateCodegen && !config.options.fullTemplateTypeCheck) {
+        /*
+          Angular cli's compiler host will not generate metadata if skipping template codegen or no full template typescheck.
+          See https://github.com/angular/angular/blob/master/packages/compiler-cli/src/transformers/compiler_host.ts#L440
+          This is required if we want to inline the resources while compiling and not in post.
+
+          To solve this we need to enforce `fullTemplateTypeCheck`:
+
+          options.fullTemplateTypeCheck = true;
+
+          but this has issues
+          see issue: https://github.com/angular/angular/issues/19905
+          which has pending PR to fix: https://github.com/angular/angular/pull/20490
+          and also, dev's might want this off...
+
+          current workaround will is to disable skipTemplateCodegen
+          this looks weired because we want it on...
+          but, at this point we have a config object (NgcParsedConfiguration) which is an angular-cli parsed config
+          created by called `readNgcCommandLineAndConfiguration`.
+          The config object has a property `emitFlags` which at this point has the flag `Codegen` OFF !!!
+          OFF reflects config.options.skipTemplateCodegen = true.
+
+          Setting `config.options.skipTemplateCodegen` to false, at this point, will not change the emitFlags.
+          The compiler will NOT emit template code gen but the `isSourceFile` method in
+          https://github.com/angular/angular/blob/master/packages/compiler-cli/src/transformers/compiler_host.ts#L440
+          will return true!
+
+          This is a weak workaround and a more solid one is required.
+
+          TODO: refactor workaround to a writeFile wrapper that will not write generated files.
+         */
+        // options.fullTemplateTypeCheck = true;
+        config.options.skipTemplateCodegen = false;
+      }
+
       const ctx = createCliContext(config);
       const { compilerHost } = ctx;
-
-      const inline = config.options.skipTemplateCodegen;
 
       return {
         execute(compiler: any): void {

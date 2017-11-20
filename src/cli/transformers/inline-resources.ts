@@ -47,11 +47,11 @@ export function findResources(sourceFile: ts.SourceFile,
 
       if (key == 'templateUrl') {
         const resourcePath = _getResourceRequest(node.initializer, sourceFile);
-        const inlineLiteral = createInlineLiteral(resourcePath);
+        const inlineLiteral = createInlineLiteral(resourcePath.resolved);
 
         if (!inlineLiteral) {
-          // TODO: add templateUrl expression
-          throw new Error(`Could not find templateUrl in "${sourceFile.fileName}"`)
+          const fileName = Path.relative(process.cwd(), sourceFile.fileName);
+          throw new Error(`Could not find templateUrl expression "${resourcePath.raw}" in "${fileName}"`);
         }
 
         const propAssign = ts.createPropertyAssignment('template', inlineLiteral);
@@ -67,11 +67,11 @@ export function findResources(sourceFile: ts.SourceFile,
         const styleLiterals: ts.Expression[] = [];
         arr[0].elements.forEach((element: ts.Expression) => {
           const resourcePath = _getResourceRequest(element, sourceFile);
-          const inlineLiteral = createInlineLiteral(resourcePath);
+          const inlineLiteral = createInlineLiteral(resourcePath.resolved);
 
           if (!inlineLiteral) {
-            // TODO: add templateUrl expression
-            throw new Error(`Could not find styleUrl in "${sourceFile.fileName}"`)
+            const fileName = Path.relative(process.cwd(), sourceFile.fileName);
+            throw new Error(`Could not find styleUrl expression "${resourcePath.raw}" in "${fileName}"`);
           }
 
           styleLiterals.push(inlineLiteral);
@@ -98,20 +98,23 @@ function _getContentOfKeyLiteral(node?: ts.Node): string | null {
   }
 }
 
-function _getResourceRequest(element: ts.Expression, sourceFile: ts.SourceFile) {
+function _getResourceRequest(element: ts.Expression, sourceFile: ts.SourceFile): { raw: string, resolved: string } {
   if (element.kind == ts.SyntaxKind.StringLiteral) {
     let url = (element as ts.StringLiteral).text;
     // If the URL does not start with / OR ./ OR ../, prepends ./ to it.
     if (! (/(^\.?\.\/)|(^\/)/.test(url)) ) {
       url = './' + url;
     }
-    return resolveResourcePath(url, sourceFile);
+    return {
+      raw: (element as ts.StringLiteral).text,
+      resolved: resolveResourcePath(url, sourceFile)
+    };
   } else {
     throw new Error('Expressions are not supported when inlining resources.')
   }
 }
 
-function resolveResourcePath(fileName: string, sourceFile: ts.SourceFile) {
+function resolveResourcePath(fileName: string, sourceFile: ts.SourceFile): string {
   if (fileName[0] === '/') {
     return fileName;
   } else {

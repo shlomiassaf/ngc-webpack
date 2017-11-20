@@ -22,11 +22,6 @@ export function performCompilationAsync({rootNames, options, host, oldProgram, e
   let emitResult: ts.EmitResult|undefined;
   let allDiagnostics: Diagnostics = [];
 
-  if (options.skipTemplateCodegen) {
-    // must set this or resources (async) will not read.
-    options.fullTemplateTypeCheck = true;
-  }
-
   return Promise.resolve()
     .then( () => {
       if (!host) {
