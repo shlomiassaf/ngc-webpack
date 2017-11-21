@@ -1,9 +1,11 @@
 import * as Path from 'path';
 import * as webpack from 'webpack';
-import { ParsedArgs } from 'minimist';
+import * as minimist from 'minimist';
+import { AngularCompilerPlugin, AngularCompilerPluginOptions } from '@ngtools/webpack';
 
 import { NgcWebpackPlugin, NgcCompilerExecutionHost } from '../plugin';
 import { NgcWebpackPluginOptions } from '../plugin-options';
+import { promiseWrapper } from '../utils';
 
 import { readNgcCommandLineAndConfiguration, NgcParsedConfiguration } from './config';
 import { parseDiagnostics, ParsedDiagnostics } from './util';
@@ -28,16 +30,48 @@ function resolveConfig(config: any): any {
   }
 }
 
-export function findPluginIndex(plugins: any[]): number {
-  return plugins.findIndex( p => p instanceof NgcWebpackPlugin);
+export function findPluginIndex(plugins: any[], type: any): number {
+  return plugins.findIndex( p => p instanceof type);
 }
 
-function promiseWrapper<T>() {
-  const wrapper: { promise: Promise<T>; resolve: (value: T) => void; reject: (reason?: any) => void } = <any> {};
-  wrapper.promise = new Promise<T>( (res, rej) => { wrapper.resolve = res; wrapper.reject = rej; });
-  return wrapper;
+export function getPluginMeta(plugins: any[]): { idx: number, instance: AngularCompilerPlugin | NgcWebpackPlugin, options: AngularCompilerPluginOptions } {
+  let idx = findPluginIndex(plugins, NgcWebpackPlugin);
+
+  if (idx > -1) {
+    return {
+      idx,
+      instance: plugins[idx],
+      options: plugins[idx].ngcWebpackPluginOptions
+    }
+  }
+
+  idx = findPluginIndex(plugins, AngularCompilerPlugin);
+  if (idx > -1) {
+    return {
+      idx,
+      instance: plugins[idx],
+      options: plugins[idx].options
+    }
+  }
+
+  // TODO: allow running without a plugin and create it here?
+  throw new Error('Could not find an instance of NgcWebpackPlugin or AngularCompilerPlugin in the provided webpack configuration');
 }
 
+
+function normalizeProjectParam(tsConfigPath: string, args: string[], parsedArgs: any): void {
+  const [ pIdx, projectIdx ] = [args.indexOf('-p'), args.indexOf('--project')];
+  parsedArgs.p = tsConfigPath;
+  if (pIdx > -1) {
+    args[pIdx + 1] = tsConfigPath;
+  } else {
+    args.push('-p', tsConfigPath);
+  }
+  if (projectIdx > -1) {
+    delete parsedArgs.project;
+    args.splice(projectIdx, 1);
+  }
+}
 
 function createCliExecutionHostFactory(config: NgcParsedConfiguration): {
   createCliExecutionHost: (options: NgcWebpackPluginOptions) => NgcCompilerExecutionHost,
@@ -137,9 +171,73 @@ function createCliExecutionHostFactory(config: NgcParsedConfiguration): {
   }
 }
 
-export function runCli(webpackConfig: string | webpack.Configuration, args: string[], parsedArgs: ParsedArgs): Promise<ParsedDiagnostics> {
+
+/**
+ * Run `ngc-webpack` in library mode. (i.e. run `ngc`)
+ * In Library mode compilation and output is done per module and no bundling is done.
+ * Webpack is used for resource compilation through it's loader chain but does not bundle anything.
+ * The webpack configuration, excluding loaders, has no effect.
+ * The webpack configuration must include a plugin instance (either  NgcWebpackPlugin / AngularCompilerPlugin).
+ *
+ * Library mode configuration is done mainly from the `tsconfig` json file.
+ *
+ * `tsconfig` json path is taken from the options of NgcWebpackPlugin / AngularCompilerPlugin
+ *
+ * @param webpackConfig Webpack configuration module, object or string
+ */
+export function runCli(webpackConfig: string | webpack.Configuration): Promise<ParsedDiagnostics>;
+/**
+ * Run `ngc-webpack` in library mode. (i.e. run `ngc`)
+ * In Library mode compilation and output is done per module and no bundling is done.
+ * Webpack is used for resource compilation through it's loader chain but does not bundle anything.
+ * The webpack configuration, excluding loaders, has no effect.
+ * The webpack configuration must include a plugin instance (either  NgcWebpackPlugin / AngularCompilerPlugin).
+ *
+ * Library mode configuration is done mainly from the `tsconfig` json file.
+ *
+ * `tsconfig` json path is taken from cli parameters (-p or --project) or, if not exists the options of
+ * NgcWebpackPlugin / AngularCompilerPlugin
+ *
+ * @param webpackConfig Webpack configuration module, object or string,
+ * @param cliParams cli Parameters, parsedArgs is not mandatory
+ */
+export function runCli(webpackConfig: string | webpack.Configuration,
+                       cliParams: { args: string[], parsedArgs?: minimist.ParsedArgs }): Promise<ParsedDiagnostics>;
+/**
+ * Run `ngc-webpack` in library mode. (i.e. run `ngc`)
+ * In Library mode compilation and output is done per module and no bundling is done.
+ * Webpack is used for resource compilation through it's loader chain but does not bundle anything.
+ * The webpack configuration, excluding loaders, has no effect.
+ * The webpack configuration must include a plugin instance (either  NgcWebpackPlugin / AngularCompilerPlugin).
+ *
+ * Library mode configuration is done mainly from the `tsconfig` json file.
+ *
+ * `tsconfig` json path is taken from the supplied tsConfigPath parameter.
+ *
+ * @param webpackConfig Webpack configuration module, object or string,
+ * @param tsConfigPath path to the tsconfig file, relative to process.cwd()
+ * @param cliParams cli Parameters, parsedArgs is not mandatory
+ */
+export function runCli(webpackConfig: string | webpack.Configuration,
+                       tsConfigPath: string,
+                       cliParams?: { args: string[], parsedArgs?: minimist.ParsedArgs }): Promise<ParsedDiagnostics>;
+export function runCli(webpackConfig: string | webpack.Configuration,
+                       tsConfigPath?: any,
+                       cliParams?: { args: string[], parsedArgs?: minimist.ParsedArgs }): Promise<ParsedDiagnostics> {
   return Promise.resolve<null>(null)
     .then( () => {
+      // normalize params:
+      if (tsConfigPath && typeof tsConfigPath !== 'string') {
+        cliParams = <any> tsConfigPath;
+        tsConfigPath = undefined;
+      }
+      if (!cliParams) {
+        cliParams = { args: [], parsedArgs: <any> {} };
+      } else if (!cliParams.parsedArgs) {
+        cliParams.parsedArgs = minimist(cliParams.args);
+      }
+      const { args, parsedArgs } = cliParams;
+
       if (typeof webpackConfig === 'string') {
         let configPath = Path.isAbsolute(webpackConfig)
           ? webpackConfig
@@ -150,20 +248,16 @@ export function runCli(webpackConfig: string | webpack.Configuration, args: stri
       }
 
       const configModule = resolveConfig(webpackConfig);
-      const pluginIdx = findPluginIndex(configModule.plugins || []);
+      const pluginMeta = getPluginMeta(configModule.plugins || []);
 
-
-      if (pluginIdx === -1) {
-        // TODO: allow running without a plugin and create it here?
-        throw new Error('Could not find an instance of NgcWebpackPlugin in the provided webpack configuration');
+      if (!tsConfigPath) {
+        tsConfigPath = parsedArgs.p || parsedArgs.project || pluginMeta.options.tsConfigPath;
       }
-
-      // if tsconfig (p or project) is not set, set it from plugin
-      if (!parsedArgs.p && !parsedArgs.project) {
-        const oldPlugin = configModule.plugins[pluginIdx];
-        parsedArgs.p = oldPlugin.tsConfigPath;
-        args.push('-p', oldPlugin.tsConfigPath);
+      if (!tsConfigPath) {
+        throw new Error('Invalid configuration, please set tsconfig path in cli params -p or --project or in NgcWebpackPlugin configuration');
       }
+      pluginMeta.options.tsConfigPath = tsConfigPath;
+      normalizeProjectParam(tsConfigPath, args, parsedArgs);
 
       const config = readNgcCommandLineAndConfiguration(args, parsedArgs);
 
@@ -172,8 +266,8 @@ export function runCli(webpackConfig: string | webpack.Configuration, args: stri
       }
 
       const { compilationResult, createCliExecutionHost: executionHostFactory } = createCliExecutionHostFactory(config);
-      const plugin = NgcWebpackPlugin.clone(configModule.plugins[pluginIdx], { executionHostFactory });
-      configModule.plugins.splice(pluginIdx, 1);
+      const plugin = new NgcWebpackPlugin(pluginMeta.options, executionHostFactory);
+      configModule.plugins.splice(pluginMeta.idx, 1);
 
       const compiler = webpack(configModule);
       plugin.apply(compiler);
@@ -181,4 +275,27 @@ export function runCli(webpackConfig: string | webpack.Configuration, args: stri
       return compilationResult
     });
 
+}
+
+
+if (require.main === module) {
+  const args: string[] = process.argv.slice(2);
+  const parsedArgs = minimist(args);
+
+  const webpackConfig = parsedArgs.webpack;
+
+  if (!webpackConfig) {
+    throw new Error('Missing webpack argument');
+  }
+
+  delete parsedArgs.webpack;
+  args.splice(args.indexOf('--webpack'), 2);
+
+  runCli(webpackConfig, { args, parsedArgs })
+    .then( parsedDiagnostics => {
+      if (parsedDiagnostics.error) {
+        console.error(parsedDiagnostics.error);
+      }
+      process.exit(parsedDiagnostics.exitCode);
+    });
 }

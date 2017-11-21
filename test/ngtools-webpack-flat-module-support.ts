@@ -48,7 +48,7 @@ describe('@ngtools/webpack flat module support', function() {
     });
 
     const config = require(configs.pluginLib.wp)(true);
-    const pluginIdx = findPluginIndex(config.plugins);
+    const pluginIdx = findPluginIndex(config.plugins, NgcWebpackPlugin);
     const options = {
       skipCodeGeneration: false,
       tsConfigPath: tmpTsConfig

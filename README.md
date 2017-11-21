@@ -9,8 +9,44 @@ the compilation process and library mode compilation support.
  - [Usage](#usage)
    - [Advanced AOT production builds](#advanced-aot-production-builds)
    - [Options](#ngcwebpackpluginoptions)
- - [Library compilation mode (CLI)](#LIBRARY_MODE.md)
  - [Optional Patching](#optional-patching)
+
+# Library mode:
+Library mode is the simple **compile** process we know from `tsc` / `ngc`
+where each module (`TS` file) is compiled into a matching `JS` file.
+
+The output files are then bundled with RollUp to create various bundle
+formats for published libraries (FESM, FESM2015, UMD, etc.)
+
+This process is fairly simple as is but with the angular AOT compiler
+in the middle things are a bit more complex.
+
+`@ngtools/webpack` does not support library compilation and it is (1.8.x)
+design for application bundling only.
+
+The `@angular/compiler-cli` does support library compilation through its
+`ngc` command line utility but it does not know about webpack,
+resources will not go through the loader chain and so using formats not
+supported by the angular cli will not work (SCSS, LESS etc).
+
+Additionally, `templareUrl` and `stylesUrls` are left as is which is not
+suitable for libraries, resources must get inlined into the sources code (JS)
+and the AOT generated `metadata.json` files.
+
+### Webpack based projects:
+`ngc-webpack` library mode allows AOT compilation for libraries through
+a CLI interface (`ngc-w`) or directly using it via node API with
+full support for inline and complete webpack loader chain compilation (for resources).
+
+### Angular CLI based projects:
+`ngc-webpack` also support library compilation for `@angular/cli` projects
+by importing the configuration from the cli and using it to build libraries.
+This works great with monorepos and setup's based on [nrwl's `Nx`](https://github.com/nrwl/nx).
+Also available by CLI interface (`ngc-w-cli`) or node API.
+
+
+For more information see:
+ - [Library compilation mode](#LIBRARY_MODE.md)
 
 
 ## Background:

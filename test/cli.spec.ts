@@ -4,15 +4,18 @@ import * as rimraf from 'rimraf';
 import { expect } from 'chai';
 
 import { ModuleMetadata } from '@angular/compiler-cli';
-import { runWebpack, resolveWebpackConfig, configs, logWebpackStats, readFile, writeFile } from './testing/utils';
-import { runCli as _runCli } from '../index';
+import { configs, readFile, writeFile } from './testing/utils';
+import { runCli as _runCli, runNgCli as _runNgCli } from '../index';
 
 
 let runCli: typeof _runCli;
+let runNgCli: typeof _runNgCli;
 try {
   runCli = require('../dist').runCli;
+  runNgCli = require('../dist').runNgCli;
 } catch (e) {
   runCli = require('../index').runCli;
+  runNgCli = require('../index').runNgCli;
 }
 
 const tsConfig = require(configs.pluginLib.ts);
@@ -36,12 +39,57 @@ async function createTempTsConfig(transform: ((config) => any) = cfg => cfg): Pr
 describe('ngc-webpack CLI', function() {
   this.timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 
-  it('CLI With flat module output', async () => {
-    const flatOutDir = outDir + '-flat';
-    delOutDir(flatOutDir);
+  const outDirs = {
+    ngCliWrapper: outDir + '-ng-cli-flat',
+    flatModule: outDir + '-flat',
+    perModule: outDir + '-module',
+    skipTemplateCodegen: outDir + '-skipTemplateCodegen'
+  };
+
+  it('angular cli wrapper (ng-cli) should inline resources in flat file output', async () => {
+    const localOutDir = outDirs.ngCliWrapper;
+    delOutDir(localOutDir);
 
     const tmpTsConfig = await createTempTsConfig( config => {
-      config.compilerOptions.outDir = flatOutDir;
+      config.compilerOptions.outDir = localOutDir;
+      return Object.assign(config, {
+        angularCompilerOptions: {
+          annotateForClosureCompiler: true,
+          skipMetadataEmit: false,
+          skipTemplateCodegen: true,
+          strictMetadataEmit: true,
+          flatModuleOutFile: 'my-lib.ng-flat.js',
+          flatModuleId: 'my-lib'
+        }
+      });
+    });
+
+    process.argv.splice(2, process.argv.length - 2, 'build');
+    const parsedDiagnostics = await runNgCli(tmpTsConfig);
+
+    rimraf.sync(tmpTsConfig);
+
+    expect(parsedDiagnostics.error).to.be.undefined;
+
+    const meta = await readFile(Path.resolve(localOutDir, 'ng-lib/src/my-lib.ng-flat.metadata.json'));
+    const metadataBundle: ModuleMetadata = JSON.parse(meta);
+    const LibComponentComponent: any = metadataBundle.metadata.LibComponentComponent;
+
+    expect(LibComponentComponent.decorators[0].arguments[0]).to.eql({
+      "selector": "lib-component",
+      "template": "<h1>Hello World</h1>",
+      "styles": [
+        "h1 {\n  border: 15px black solid; }\n"
+      ]
+    });
+  });
+
+  it('should inline resources in flat file output', async () => {
+    const localOutDir = outDirs.flatModule;
+    delOutDir(localOutDir);
+
+    const tmpTsConfig = await createTempTsConfig( config => {
+      config.compilerOptions.outDir = localOutDir;
       return Object.assign(config, {
         angularCompilerOptions: {
           annotateForClosureCompiler: true,
@@ -55,13 +103,13 @@ describe('ngc-webpack CLI', function() {
     });
 
     const config = require(configs.pluginLib.wp)(true);
-    const parsedDiagnostics = await runCli(config, ['-p', tmpTsConfig], { p: tmpTsConfig, _: [] });
+    const parsedDiagnostics = await runCli(config, tmpTsConfig);
 
     rimraf.sync(tmpTsConfig);
 
     expect(parsedDiagnostics.error).to.be.undefined;
 
-    const meta = await readFile(Path.resolve(flatOutDir, 'ng-lib/src/my-lib.ng-flat.metadata.json'));
+    const meta = await readFile(Path.resolve(localOutDir, 'ng-lib/src/my-lib.ng-flat.metadata.json'));
     const metadataBundle: ModuleMetadata = JSON.parse(meta);
     const LibComponentComponent: any = metadataBundle.metadata.LibComponentComponent;
 
@@ -74,10 +122,18 @@ describe('ngc-webpack CLI', function() {
     });
   });
 
+  it('cli and ng-cli should match', async () => {
+    const ngCliMeta = await readFile(Path.resolve(outDirs.ngCliWrapper, 'ng-lib/src/my-lib.ng-flat.metadata.json'));
+    const cliMeta = await readFile(Path.resolve(outDirs.flatModule, 'ng-lib/src/my-lib.ng-flat.metadata.json'));
+    expect(ngCliMeta).to.eq(cliMeta);
+  });
+
   it('should inline resources per module', async () => {
-    delOutDir(outDir);
+    const localOutDir = outDirs.perModule;
+    delOutDir(localOutDir);
 
     const tmpTsConfig = await createTempTsConfig( config => {
+      config.compilerOptions.outDir = localOutDir;
       return Object.assign(config, {
         angularCompilerOptions: {
           annotateForClosureCompiler: true,
@@ -89,12 +145,12 @@ describe('ngc-webpack CLI', function() {
     });
 
     const config = require(configs.pluginLib.wp)(true);
-    const parsedDiagnostics = await runCli(config, ['-p', tmpTsConfig], { p: tmpTsConfig, _: [] });
+    const parsedDiagnostics = await runCli(config, tmpTsConfig);
 
     rimraf.sync(tmpTsConfig);
 
     expect(parsedDiagnostics.error).to.be.undefined;
-    const meta = await readFile(Path.resolve(outDir, 'ng-lib/src/lib-component/lib-component.component.metadata.json'));
+    const meta = await readFile(Path.resolve(localOutDir, 'ng-lib/src/lib-component/lib-component.component.metadata.json'));
     const metadataBundle: ModuleMetadata = JSON.parse(meta)[0];
     const LibComponentComponent: any = metadataBundle.metadata.LibComponentComponent;
 
@@ -108,9 +164,11 @@ describe('ngc-webpack CLI', function() {
   });
 
   it('should emit AOT artifacts when skipTemplateCodegen is false and not inline resources.', async () => {
-    delOutDir(outDir);
+    const localOutDir = outDirs.skipTemplateCodegen;
+    delOutDir(localOutDir);
 
     const tmpTsConfig = await createTempTsConfig( config => {
+      config.compilerOptions.outDir = localOutDir;
       return Object.assign(config, {
         angularCompilerOptions: {
           annotateForClosureCompiler: true,
@@ -122,12 +180,12 @@ describe('ngc-webpack CLI', function() {
     });
 
     const config = require(configs.pluginLib.wp)(true);
-    const parsedDiagnostics = await runCli(config, ['-p', tmpTsConfig], { p: tmpTsConfig, _: [] });
+    const parsedDiagnostics = await runCli(config, tmpTsConfig);
 
     rimraf.sync(tmpTsConfig);
 
     expect(parsedDiagnostics.error).to.be.undefined;
-    const meta = await readFile(Path.resolve(outDir, 'ng-lib/src/lib-component/lib-component.component.metadata.json'));
+    const meta = await readFile(Path.resolve(localOutDir, 'ng-lib/src/lib-component/lib-component.component.metadata.json'));
     const metadataBundle: ModuleMetadata = JSON.parse(meta)[0];
     const LibComponentComponent: any = metadataBundle.metadata.LibComponentComponent;
 
@@ -139,7 +197,7 @@ describe('ngc-webpack CLI', function() {
       "templateUrl": "./lib-component.component.html"
     });
 
-    const p = Path.resolve(outDir, 'ng-lib/src/lib-component/lib-component.component.');
+    const p = Path.resolve(localOutDir, 'ng-lib/src/lib-component/lib-component.component.');
     ['ngfactory.js', 'ngsummary.json', 'scss.shim.ngstyle.js'].forEach(suffix => {
       expect(FS.existsSync(p + suffix)).to.eq(true, 'Expected AOT file ' + p + suffix)
     });

@@ -74,12 +74,8 @@ export function createAngularCompilerPluginExecutionHost(options: NgcWebpackPlug
 }
 
 export class NgcWebpackPlugin {
-  private ngcWebpackPluginOptions: NgcWebpackPluginOptions;
+  readonly ngcWebpackPluginOptions: NgcWebpackPluginOptions;
   private executionHostFactory: (options: NgcWebpackPluginOptions) => NgcCompilerExecutionHost;
-
-  get tsConfigPath(): string {
-    return this.ngcWebpackPluginOptions.tsConfigPath;
-  }
 
   constructor(options: NgcWebpackPluginOptions,
               executionHostFactory: (options: NgcWebpackPluginOptions) => NgcCompilerExecutionHost = createAngularCompilerPluginExecutionHost) {

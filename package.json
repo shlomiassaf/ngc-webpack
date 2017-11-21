@@ -1,6 +1,6 @@
 {
   "name": "ngc-webpack",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "A wrapper for the @ngtools/webpack with hooks into the compilation process",
   "author": "Shlomi Assaf <shlomiasaf@gmail.com>",
   "license": "MIT",
@@ -10,7 +10,8 @@
   },
   "main": "index.js",
   "bin": {
-    "ngc-w": "src/cli/cli.js"
+    "ngc-w": "src/cli/cli.js",
+    "ngc-w-cli": "src/cli/ng-cli.js"
   },
   "typings": "index.d.ts",
   "keywords": [
@@ -22,7 +23,7 @@
   ],
   "scripts": {
     "clean:build": "npm run rimraf -- dist",
-    "ci": "npm run test",
+    "ci": "node -e \"console.log('TypeScript VERSION: ' + require('typescript').version)\" && npm run test",
     "test": "npm run build-test && ./node_modules/.bin/mocha dist/test/*.spec.js --recursive",
     "watch": "npm run build -- -w",
     "build": "npm run clean:build && tsc --project tsconfig.json",
@@ -36,6 +37,7 @@
     "magic-string": "^0.22.3",
     "minimist": "^1.2.0",
     "reflect-metadata": "^0.1.10",
+    "resolve": "^1.5.0",
     "semver": "^5.4.1",
     "source-map": "^0.5.6",
     "ts-node": "^3.2.0"
@@ -62,6 +64,7 @@
     "@types/jest": "^20.0.4",
     "@types/mocha": "^2.2.37",
     "@types/node": "^7.0.0",
+    "@types/resolve": "^0.0.4",
     "@types/rimraf": "^2.0.2",
     "@types/semver": "^5.3.32",
     "@types/source-map": "^0.5.2",
@@ -90,7 +93,7 @@
     "to-string-loader": "^1.1.4",
     "ts-jest": "^20.0.7",
     "tsconfig-paths": "^2.3.0",
-    "typescript": "^2.4.2",
+    "typescript": "~2.4.2",
     "webpack": "^3.8.1",
     "zone.js": "^0.8.14"
   },

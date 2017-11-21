@@ -40,11 +40,86 @@ applied based on your AOT configuration set on `tsconfig`
 Library mode does not require specific configuration, it is configured
 using existing configuration in `tsconfig` and `webpack.config`.
 
-
 The output is controlled by the `tsconfig` supplied.
 
 `ngc-webpack` will inline all resources to both `metadata.json` files and `js` source code.
 If `skipTemplateCodegen` is set to **false** the compiler will emit source code for all resource in dedicated modules
 and so `ngc-webpack` will not perform the inline operation.
 
-TODO: Usage with node + usage with CLI
+
+## Usage
+
+The examples refers to a typical library project structure where
+a demo app is used in development and consumes the library.
+
+```bash
+ngc-w --webpack webpack.config.packge.js
+```
+
+You'r webpack config should contain the loaders you use in your dev and
+prod builds and `NgcWebpackPlugin` instance must exists in the plugins collection.
+
+The `NgcWebpackPlugin` instance option's `tsConfigPath` property should
+point to a `tsconfig` file that is properly set for library compilation.
+
+Another options is to use the webpack config you are using for prod/dev
+with a command line param pointing at the tsconfig, `ngc-webpack` will
+replace the `tsConfigPath` in run time.
+
+```bash
+ngc-w --webpack webpack.config.app.js -p tsconfig.package.json
+```
+
+
+### Angular CLI library build:
+Angular CLI does not support library builds out of the box but with some
+magic it is possible.
+As we now know, `webpack` is not used for bundling when compiling libraries
+so actually what we need is only the webpack configuration that the cli creates.
+
+`ngc-webpack` invokes the cli and captures the configuration files and then
+uses it with a different `tsconfig` to build the library.
+
+```bash
+ngc-w-cli build -p tsconfig.package.json
+```
+
+We do not need to specify a webpack config, we get it from the cli but
+we do need to specify the `build` command so the cli will not complain.
+The tsconfig (-p) is not mandatory, if not set it is taken from the plugin
+but ofcourse this is not recommended so your will need to set it.
+
+
+## Node API:
+
+-----
+
+TODO...
+
+-------
+
+For now, see the test (`cli.spec.ts)
+
+## `tsconfig.json` for library compilation
+A `tsconfig` for library compilation is quite similar to your application
+configuration with some modification:
+
+  - You can not use `include`, a specific `files` entry must be set
+  with 1 `ts` module set at index 0 (and optional d.ts afterwards)
+
+  - An `outDir` must be set, this is where the output of the compilation is saved
+
+  - `declaration` should be set to **true** so `d.ts` files are shipped with your library.
+
+  - `angularCompilerOptions` should be set for flat module output and other
+  instructions:
+```
+  angularCompilerOptions: {
+    annotateForClosureCompiler: true,
+    skipMetadataEmit: false,
+    skipTemplateCodegen: true,
+    strictMetadataEmit: true,
+    flatModuleOutFile: 'my-lib.ng-flat.js',
+    flatModuleId: 'my-lib'
+  }
+```
