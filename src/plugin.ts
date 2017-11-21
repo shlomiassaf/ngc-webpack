@@ -1,77 +1,10 @@
-import * as ts from 'typescript';
-import { AngularCompilerPlugin } from '@ngtools/webpack';
 
 import { NgcWebpackPluginOptions } from './plugin-options'
-import { hasHook, isValidAngularCompilerPlugin } from './utils';
+import { hasHook } from './utils';
 import { WebpackResourceLoader } from './resource-loader';
-import { MonkeyAngularCompilerPlugin, MonkeyWebpackCompilerHost } from './monkies';
+import { NgcCompilerExecutionHost, MonkeyWebpackCompilerHost } from './execution-models';
+import { createAngularCompilerPluginExecutionHost } from './angular-compiler-execution-host';
 
-export interface NgcCompilerHost extends ts.CompilerHost {
-  resourceLoader?: { get(filePath: string): Promise<string> };
-  readResource?(fileName: string): Promise<string> | string;
-}
-
-export interface NgcCompilerExecutionHost {
-  execute(compiler: any): void;
-  compilerHost: NgcCompilerHost;
-  transformers: ts.TransformerFactory<ts.SourceFile>[];
-  hookOverride?: {
-    [K in keyof NgcWebpackPluginOptions]?: (opt: NgcWebpackPluginOptions[K]) => void
-  }
-}
-
-export function createAngularCompilerPluginExecutionHost(options: NgcWebpackPluginOptions): NgcCompilerExecutionHost {
-  const ngPlugin: MonkeyAngularCompilerPlugin = <any> new AngularCompilerPlugin(options);
-
-  if (!isValidAngularCompilerPlugin(ngPlugin)) {
-    throw new Error('The "@ngtools/webpack" package installed is not compatible with this ' +
-      'version of "ngc-webpack"');
-  }
-
-  // we must use the base instance because AngularCompilerPlugin use it.
-  const compilerHost = ngPlugin._compilerHost;
-
-  Object.defineProperty(compilerHost, 'resourceLoader', {
-    get: function(this: MonkeyWebpackCompilerHost) {
-      return this._resourceLoader;
-    }
-  });
-
-  return {
-    execute(compiler: any): void {
-      ngPlugin.apply(compiler);
-    },
-    compilerHost,
-    transformers: ngPlugin._transformers,
-    hookOverride: {
-      readFileTransformer: readFileTransformer => {
-        const orgReadFile = compilerHost.readFile;
-        const { predicate, transform } = readFileTransformer;
-        const predicateFn = typeof predicate === 'function'
-          ? predicate
-          : (fileName: string) => predicate.test(fileName)
-        ;
-
-        Object.defineProperty(compilerHost, 'readFile', {
-          value: function(this: MonkeyWebpackCompilerHost, fileName: string): string {
-            if (predicateFn(fileName)) {
-              let stats = compilerHost._files[fileName];
-              if (!stats) {
-                const content = transform(fileName, orgReadFile.call(compilerHost, fileName));
-                stats = compilerHost._files[fileName];
-                if (stats) {
-                  stats.content = content;
-                }
-                return content;
-              }
-            }
-            return orgReadFile.call(compilerHost, fileName);
-          }
-        });
-      }
-    }
-  }
-}
 
 export class NgcWebpackPlugin {
   readonly ngcWebpackPluginOptions: NgcWebpackPluginOptions;

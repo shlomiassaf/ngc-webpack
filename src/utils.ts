@@ -1,5 +1,5 @@
 import { NgcWebpackPluginOptions as NgcOptions } from './plugin-options'
-import { MonkeyAngularCompilerPlugin } from './monkies';
+import { MonkeyAngularCompilerPlugin } from './execution-models';
 
 export function hasHook(options: NgcOptions, name: Array<keyof NgcOptions>): boolean[];
 export function hasHook(options: NgcOptions, name: keyof NgcOptions): boolean;

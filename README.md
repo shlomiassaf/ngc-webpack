@@ -4,6 +4,9 @@
 [@ngtools/webpack](https://github.com/angular/angular-cli/tree/master/packages/%40ngtools/webpack) wrapper with hooks into
 the compilation process and library mode compilation support.
 
+## Application mode:
+AOT compilation for an application.
+
  - [Background](#background)
  - [Porting to/from `@ngtools/webpack](#porting)
  - [Usage](#usage)
@@ -11,7 +14,9 @@ the compilation process and library mode compilation support.
    - [Options](#ngcwebpackpluginoptions)
  - [Optional Patching](#optional-patching)
 
-# Library mode:
+## Library mode:
+AOT compilation for a library.
+
 Library mode is the simple **compile** process we know from `tsc` / `ngc`
 where each module (`TS` file) is compiled into a matching `JS` file.
 
@@ -48,6 +53,8 @@ Also available by CLI interface (`ngc-w-cli`) or node API.
 For more information see:
  - [Library compilation mode](#LIBRARY_MODE.md)
 
+> Library mode is experimental as it uses experimental API from angular
+packages.
 
 ## Background:
 `ngc-webpack` started as a wrapper for `@angular/compiler-cli` when angular
