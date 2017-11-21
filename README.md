@@ -51,7 +51,7 @@ Also available by CLI interface (`ngc-w-cli`) or node API.
 
 
 For more information see:
- - [Library compilation mode](#./LIBRARY_MODE.md)
+ - [Library compilation mode](LIBRARY_MODE.md)
 
 > Library mode is experimental as it uses experimental API from angular
 packages.
