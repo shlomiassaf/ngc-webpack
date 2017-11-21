@@ -123,3 +123,16 @@ configuration with some modification:
     flatModuleId: 'my-lib'
   }
 ```
+
+## Monorepos:
+Mono-repos are a great way to publish libraries under the same npm scope
+or as part of a big project.
+
+`ngc-webpack` library mode can work well with monorepo setup, the trick
+with monorepo setup is configuration, especially `paths`
+
+For a fully managed monorepo solution, integrated with the angular-cli
+you can use [nrwl's `Nx`](https://github.com/nrwl/nx)
+
+For a custom setup, please take a look at [angular-library-starter](https://github.com/shlomiassaf/angular-library-starter)
+which has a setup running with the library mode of `ngc-webpack`

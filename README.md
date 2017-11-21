@@ -20,14 +20,14 @@ AOT compilation for a library.
 Library mode is the simple **compile** process we know from `tsc` / `ngc`
 where each module (`TS` file) is compiled into a matching `JS` file.
 
-The output files are then bundled with RollUp to create various bundle
+The output files can then bundle up with RollUp to create various bundle
 formats for published libraries (FESM, FESM2015, UMD, etc.)
 
 This process is fairly simple as is but with the angular AOT compiler
 in the middle things are a bit more complex.
 
 `@ngtools/webpack` does not support library compilation and it is (1.8.x)
-design for application bundling only.
+designed for application bundling only.
 
 The `@angular/compiler-cli` does support library compilation through its
 `ngc` command line utility but it does not know about webpack,
