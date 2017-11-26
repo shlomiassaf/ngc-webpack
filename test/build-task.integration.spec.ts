@@ -5,17 +5,18 @@ import { expect } from 'chai';
 
 import { ModuleMetadata } from '@angular/compiler-cli';
 import { configs, readFile, writeFile } from './testing/utils';
-import { runCli as _runCli, runNgCli as _runNgCli } from '../index';
+import { createBuildTask as _createBuildTask } from '../index';
+import { getCliConfiguration as _getCliConfiguration } from '../src/cli/ng-cli';
 
 
-let runCli: typeof _runCli;
-let runNgCli: typeof _runNgCli;
+let createBuildTask: typeof _createBuildTask;
+let getCliConfiguration: typeof _getCliConfiguration;
 try {
-  runCli = require('../dist').runCli;
-  runNgCli = require('../dist').runNgCli;
+  createBuildTask = require('../dist').createBuildTask;
+  getCliConfiguration = require('../dist/src/cli/ng-cli').getCliConfiguration;
 } catch (e) {
-  runCli = require('../index').runCli;
-  runNgCli = require('../index').runNgCli;
+  createBuildTask = require('../index').createBuildTask;
+  getCliConfiguration = require('../src/cli/ng-cli').getCliConfiguration;
 }
 
 const tsConfig = require(configs.pluginLib.ts);
@@ -36,7 +37,7 @@ async function createTempTsConfig(transform: ((config) => any) = cfg => cfg): Pr
   return tmpTsConfig;
 }
 
-describe('ngc-webpack CLI', function() {
+describe('Build Task - Integration', function() {
   this.timeout(1000 * 60 * 3); // 3 minutes, should be enough to compile.
 
   const outDirs = {
@@ -65,7 +66,8 @@ describe('ngc-webpack CLI', function() {
     });
 
     process.argv.splice(2, process.argv.length - 2, 'build');
-    const parsedDiagnostics = await runNgCli(tmpTsConfig);
+    const parsedDiagnostics = await getCliConfiguration()
+      .then( config => createBuildTask(config, tmpTsConfig).run() );
 
     rimraf.sync(tmpTsConfig);
 
@@ -103,7 +105,7 @@ describe('ngc-webpack CLI', function() {
     });
 
     const config = require(configs.pluginLib.wp)(true);
-    const parsedDiagnostics = await runCli(config, tmpTsConfig);
+    const parsedDiagnostics = await createBuildTask(config, tmpTsConfig).run();
 
     rimraf.sync(tmpTsConfig);
 
@@ -145,7 +147,7 @@ describe('ngc-webpack CLI', function() {
     });
 
     const config = require(configs.pluginLib.wp)(true);
-    const parsedDiagnostics = await runCli(config, tmpTsConfig);
+    const parsedDiagnostics = await createBuildTask(config, tmpTsConfig).run();
 
     rimraf.sync(tmpTsConfig);
 
@@ -180,7 +182,7 @@ describe('ngc-webpack CLI', function() {
     });
 
     const config = require(configs.pluginLib.wp)(true);
-    const parsedDiagnostics = await runCli(config, tmpTsConfig);
+    const parsedDiagnostics = await createBuildTask(config, tmpTsConfig).run();
 
     rimraf.sync(tmpTsConfig);
 

@@ -1,24 +1,42 @@
 import * as Path from 'path';
 
-import { NgcWebpackPluginOptions } from '../plugin-options';
-import { NgcCompilerExecutionHost } from '../execution-models';
-
-import { NgcParsedConfiguration } from './config';
-import {ParsedDiagnostics, parseDiagnostics} from './util';
+import { NgcWebpackPluginOptions } from '../../plugin-options';
+import { NgcCompilerExecutionHost } from '../../execution-models';
+import { promiseWrapper } from '../../utils';
+import { NgcParsedConfiguration } from '../config';
+import { CompilationResult, parseDiagnostics } from '../util';
 import { performCompilationAsync } from './perform_compile_async';
-import { createCliContext } from './cli-context';
-import { promiseWrapper } from '../utils';
+import { createCliContext } from './ngc-context';
 
 export interface AsyncNgcCompilerExecutionHost<T> extends NgcCompilerExecutionHost {
+  /**
+   * Execute the compilation async
+   * @param compiler
+   * @returns {Promise<T>}
+   */
   executeAsync(compiler: any): Promise<T>;
 }
 
-export function asyncCliExecutionHostFactory(config: NgcParsedConfiguration): {
+/**
+ * An async execution host factory implementation of [[ngcExecutionHostFactory]]
+ *
+ * Execution hosts are executed within the `NgcWebpackPlugin` and the plugin implements the webpack plugin API.
+ * This works great for bundling since webpack manages the whole process and notifies when done.
+ * In `ngc` execution webpack is only a resource compiler and does not manage the process so we need to get notified
+ * when the the execution is done which is not possible through the plugin.
+ *
+ * To solve this issue this function wraps the execution method and return the result + a promise that emits when
+ * execution is done.
+ *
+ * The actual async logic is done in [[ngcExecutionHostFactory]] but in the `executeAsync` method which is not fired
+ * by the plugin. T
+ */
+export function asyncNgcExecutionHostFactory(config: NgcParsedConfiguration): {
   executionHostFactory: (options: NgcWebpackPluginOptions) => NgcCompilerExecutionHost,
-  executeDone: Promise<ParsedDiagnostics>
+  executeDone: Promise<CompilationResult>
 } {
-  const executionHostFactory = cliExecutionHostFactory(config);
-  const p = promiseWrapper<ParsedDiagnostics>();
+  const executionHostFactory = ngcExecutionHostFactory(config);
+  const p = promiseWrapper<CompilationResult>();
 
   const wrapper = (options: NgcWebpackPluginOptions): NgcCompilerExecutionHost => {
     const result = executionHostFactory(options);
@@ -35,8 +53,16 @@ export function asyncCliExecutionHostFactory(config: NgcParsedConfiguration): {
   }
 }
 
-export function cliExecutionHostFactory(config: NgcParsedConfiguration): (options: NgcWebpackPluginOptions) => AsyncNgcCompilerExecutionHost<ParsedDiagnostics> {
-  return (options: NgcWebpackPluginOptions): AsyncNgcCompilerExecutionHost<ParsedDiagnostics> => {
+/**
+ * An execution host factory for the `@angular/compiler-cli` (ngc) compiler creating AOT compilations.
+ * This execution host will perform a TS -> JS compilation per module without any bundling which makes it suitable
+ * for library compilation.
+ *
+ * > The host factory creates and configures the execution host, actual logic for the execution host is managed by
+ * the context (ngc-context.ts)
+ */
+export function ngcExecutionHostFactory(config: NgcParsedConfiguration): (options: NgcWebpackPluginOptions) => AsyncNgcCompilerExecutionHost<CompilationResult> {
+  return (options: NgcWebpackPluginOptions): AsyncNgcCompilerExecutionHost<CompilationResult> => {
     const inline = config.options.skipTemplateCodegen;
     if (config.options.skipTemplateCodegen && !config.options.fullTemplateTypeCheck) {
       /*
@@ -80,7 +106,7 @@ export function cliExecutionHostFactory(config: NgcParsedConfiguration): (option
         execute(compiler: any): void {
           this.executeAsync(compiler);
         },
-        executeAsync(compiler: any): Promise<ParsedDiagnostics> {
+        executeAsync(compiler: any): Promise<CompilationResult> {
           const compilation = ctx.createCompilation(compiler);
           const rootNames = config.rootNames.slice();
 
@@ -111,11 +137,18 @@ export function cliExecutionHostFactory(config: NgcParsedConfiguration): (option
                 compilation.errors.push(error);
               }
 
-              // inline resources into the flat metadata json file, if exists.
-              if (compilation.errors.length === 0 && config.options.flatModuleOutFile) {
-                // TODO: check that it exists, config.rootNames should not have it (i.e. it was added to rootNames)
-                const flatModulePath = rootNames[rootNames.length - 1];
-                ctx.inlineFlatModuleMetadataBundle(Path.dirname(flatModulePath), config.options.flatModuleOutFile);
+              if (compilation.errors.length === 0) {
+                // inline resources into the flat metadata json file, if exists.
+                if (config.options.flatModuleOutFile) {
+                  // TODO: check that it exists, config.rootNames should not have it (i.e. it was added to rootNames)
+                  const flatModulePath = rootNames[rootNames.length - 1];
+                  ctx.inlineFlatModuleMetadataBundle(Path.dirname(flatModulePath), config.options.flatModuleOutFile);
+                }
+
+                parsedDiagnostics.result = {
+                  sourceToOutMapper: ctx.getSourceToOutMapper(),
+                  emitResult: result.emitResult
+                };
               }
 
               return parsedDiagnostics;

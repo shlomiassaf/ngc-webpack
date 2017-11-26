@@ -1,2 +1,7 @@
-export { runCli } from './cli';
-export { runNgCli } from './ng-cli';
+export { createBuildTask } from './build-task';
+export {
+  LibraryBuildMeta,
+  BuildConfig,
+  ConfigFileBuildTask,
+  createBuildTaskFromConfigFile
+} from './config-file';

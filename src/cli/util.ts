@@ -1,4 +1,5 @@
 import * as path from 'path';
+import {ParsedArgs} from 'minimist';
 import * as ts from 'typescript';
 
 import {
@@ -15,14 +16,48 @@ import * as tsickle from 'tsickle';
 export const GENERATED_FILES = /(.*?)\.(ngfactory|shim\.ngstyle|ngstyle|ngsummary)\.(js|d\.ts|ts)$/;
 export const DTS = /\.d\.ts$/;
 
-export interface ParsedDiagnostics {
+export interface CompilationResult {
   exitCode: number;
   error?: Error;
+  result?: {
+    /**
+     * Source file to destination file mapper used to map source files to dest files.
+     */
+    sourceToOutMapper: (srcFileName: string, reverse?: boolean) => string;
+    emitResult: ts.EmitResult;
+  }
 }
 
+/**
+ * Returns a CLI argument from the list of arguments and delete (key and value)
+ * If a parsed argument object is supplied, delete from it as well.
+ */
+export function getArgAndDelete(key: string, args: string[], parsedArgs?: ParsedArgs & Object): any {
+  let result: any;
+
+  const re = new RegExp(`^--?${key}$`);
+  const idx = args.findIndex( k => re.test(k) );
+  if (idx > -1) {
+    const idxNext = idx + 1;
+    let deleteCount = 1;
+    if (idxNext >= args.length || args[idxNext][0] === '-') {
+      result = true;
+    } else {
+      deleteCount++;
+      result = args[idxNext];
+    }
+    args.splice(idx, deleteCount);
+  }
+
+  if (parsedArgs) {
+    delete parsedArgs[key];
+  }
+
+  return result;
+}
 export function parseDiagnostics(allDiagnostics: Diagnostics,
-                                 options?: CompilerOptions): ParsedDiagnostics {
-  const result: ParsedDiagnostics = { exitCode: exitCodeFromResult(allDiagnostics) };
+                                 options?: CompilerOptions): CompilationResult {
+  const result: CompilationResult = { exitCode: exitCodeFromResult(allDiagnostics) };
 
   const errorsAndWarnings = filterErrorsAndWarnings(allDiagnostics);
   if (errorsAndWarnings.length) {

@@ -7,7 +7,6 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "sourceMap": false,
     "noEmitHelpers": true,
     "strictNullChecks": false,
     "baseUrl": ".",

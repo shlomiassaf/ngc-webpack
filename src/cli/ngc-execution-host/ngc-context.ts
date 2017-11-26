@@ -1,20 +1,19 @@
 import * as FS from 'fs';
 import * as Path from 'path';
 import * as ts from 'typescript';
-
 import { TsEmitArguments } from '@angular/compiler-cli';
-import { WebpackResourceLoader } from '../resource-loader';
 
-import { NgcParsedConfiguration } from './config';
-import { createTsickleEmitCallback, defaultEmitCallback, createSrcToOutPathMapper } from './util';
-import { CliCompilerHost } from './cli-compiler-host';
+import { WebpackResourceLoader } from '../../resource-loader';
+import { NgcParsedConfiguration } from '../config';
+import { createTsickleEmitCallback, createSrcToOutPathMapper } from '../util';
 import { inlineResources } from './transformers/inline-resources';
 import { inlineMetadataBundle } from './inline-metadata';
+import { NgcCompilerHost } from './ngc-compiler-host';
 
 export function createCliContext(config: NgcParsedConfiguration) {
   let sourceToOutMapper: (srcFileName: string, reverse?: boolean) => string;
 
-  const compilerHost = new CliCompilerHost(config.options, new WebpackResourceLoader());
+  const compilerHost = new NgcCompilerHost(config.options, new WebpackResourceLoader());
   const getResource = (resourcePath: string): string | undefined => compilerHost.getResource(resourcePath);
   const realEmitCallback = createTsickleEmitCallback(config.options); // defaultEmitCallback;
 
@@ -57,6 +56,15 @@ export function createCliContext(config: NgcParsedConfiguration) {
 
   return {
     compilerHost,
+
+    /**
+     * Returns the source file to destination file mapper used to map source files to dest files.
+     * The mapper is available after after the compilation is done.
+     */
+    getSourceToOutMapper(): ( (srcFileName: string, reverse?: boolean) => string ) | undefined {
+      return sourceToOutMapper;
+    },
+
     createCompilation(compiler) {
       const compilation = compiler.createCompilation();
       compilerHost.resourceLoader.update(compilation);

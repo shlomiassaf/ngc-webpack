@@ -3,12 +3,29 @@
  */
 
 import * as ts from 'typescript';
-import { isSyntaxError } from '@angular/compiler';
-import { Program, CompilerHost, CompilerOptions, TsEmitCallback, CustomTransformers, PerformCompilationResult, createCompilerHost, createProgram, Diagnostic, Diagnostics, EmitFlags, DEFAULT_ERROR_CODE, UNKNOWN_ERROR_CODE, SOURCE } from '@angular/compiler-cli';
+import {isSyntaxError} from '@angular/compiler';
+import {
+  Program,
+  CompilerHost,
+  CompilerOptions,
+  TsEmitCallback,
+  CustomTransformers,
+  PerformCompilationResult,
+  createCompilerHost,
+  createProgram,
+  Diagnostic,
+  Diagnostics,
+  EmitFlags,
+  DEFAULT_ERROR_CODE,
+  UNKNOWN_ERROR_CODE,
+  SOURCE
+} from '@angular/compiler-cli';
 
-export function performCompilationAsync({rootNames, options, host, oldProgram, emitCallback,
-                                     gatherDiagnostics = asyncDiagnostics,
-                                     customTransformers, emitFlags = EmitFlags.Default}: {
+export function performCompilationAsync({
+                                          rootNames, options, host, oldProgram, emitCallback,
+                                          gatherDiagnostics = asyncDiagnostics,
+                                          customTransformers, emitFlags = EmitFlags.Default
+                                        }: {
   rootNames: string[],
   options: CompilerOptions,
   host?: CompilerHost,
@@ -19,18 +36,18 @@ export function performCompilationAsync({rootNames, options, host, oldProgram, e
   emitFlags?: EmitFlags
 }): Promise<PerformCompilationResult> {
   let program: Program | undefined;
-  let emitResult: ts.EmitResult|undefined;
+  let emitResult: ts.EmitResult | undefined;
   let allDiagnostics: Diagnostics = [];
 
   return Promise.resolve()
-    .then( () => {
+    .then(() => {
       if (!host) {
         host = createCompilerHost({options});
       }
       program = createProgram({rootNames, host, options, oldProgram});
       return program.loadNgStructureAsync()
     })
-    .then( () => {
+    .then(() => {
       const beforeDiags = Date.now();
       allDiagnostics.push(...gatherDiagnostics(program !));
       if (options.diagnostics) {
@@ -46,7 +63,7 @@ export function performCompilationAsync({rootNames, options, host, oldProgram, e
       }
       return {diagnostics: allDiagnostics, program};
     })
-    .catch( e => {
+    .catch(e => {
       let errMsg: string;
       let code: number;
       if (isSyntaxError(e)) {

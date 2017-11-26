@@ -1,7 +1,6 @@
 import * as ts from 'typescript';
-import {basename, dirname, join, sep} from 'path';
-import * as fs from 'fs';
-import { WebpackResourceLoader } from '../resource-loader';
+import { sep } from 'path';
+import { WebpackResourceLoader } from '../../resource-loader';
 
 function denormalizePath(path: string): string {
   return path.replace(/\//g, sep);
@@ -11,7 +10,7 @@ export interface OnErrorFn {
   (message: string): void;
 }
 
-export class CliCompilerHost implements ts.CompilerHost {
+export class NgcCompilerHost implements ts.CompilerHost {
   private resourceCache = new Map<string, string>();
   private host: ts.CompilerHost;
 
